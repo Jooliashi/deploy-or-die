@@ -1,11 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MiniGamePanel } from '@/components/minigames';
 import { Sparkline } from '@/components/sparkline';
 import { WaitingRoom } from '@/components/waiting-room';
 import { getControlLabels, roles } from '@/lib/game/data';
-import type { PromptDefinition } from '@/lib/game/types';
+import type { ControlDefinition } from '@/lib/game/types';
 import {
   createJazzRoom,
   DEMO_ROOM_CODE,
@@ -91,38 +90,49 @@ function compactLabel(control: string) {
     .replace('How-To Blast', 'HOWTO');
 }
 
+function formatSubControlLabel(key: string) {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
 function getControlSkin(control: string): ControlSkin {
   switch (control) {
-    case 'Rebuild Preview Deployment':
+    case 'Instant Rollback':
       return 'browser';
-    case 'Patch Toolbar Comments':
+    case 'UI':
       return 'toggle';
-    case 'Override Flags Explorer':
+    case 'Flags':
       return 'flag';
-    case 'Reconnect Web Analytics':
+    case 'Configs':
       return 'chart';
-    case 'Sync Edge Config':
+    case 'Edge Config':
       return 'terminal';
-    case 'Replay Cron Run':
+    case 'Workflow':
       return 'switch';
-    case 'Shift Function Region':
+    case 'Vercel Function':
       return 'globe';
-    case 'Purge Runtime Cache':
+    case 'Cache':
       return 'cache';
-    case 'Promote Postgres Replica':
+    case 'Clickhouse':
       return 'database';
-    case 'Purge KV Drift':
+    case 'Dynamodb':
       return 'kv';
-    case 'Restore Blob Asset':
+    case 'Cosmodb':
       return 'blob';
-    case 'Backfill Session Store':
+    case 'Tinybird':
       return 'queue';
-    case 'Post Launch Thread':
+    case 'Social Media':
       return 'social';
-    case 'Reply to Enterprise Ticket':
+    case 'Customer Ticket':
       return 'reply';
-    case 'Ping Integration Vendor':
+    case 'Vendor':
       return 'vendor';
+    case 'Status Page':
+      return 'chart';
     default:
       return 'broadcast';
   }
@@ -356,6 +366,25 @@ function getPlayerControls(roleId: string): string[] {
   return [...own, ...others];
 }
 
+function getControlDefinition(label: string): ControlDefinition | undefined {
+  for (const role of roles) {
+    const match = role.controls.find(control => control.label === label);
+    if (match) {
+      return match;
+    }
+  }
+  return undefined;
+}
+
+function requiresSubControlChoice(control: ControlDefinition | undefined): boolean {
+  if (!control) {
+    return false;
+  }
+
+  const keys = Object.keys(control.subControls);
+  return !(keys.length === 1 && keys[0] === 'default');
+}
+
 export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const adapterRef = useRef<JazzMultiplayerAdapter | null>(null);
   const isDemo = roomCode === DEMO_ROOM_CODE;
@@ -386,10 +415,9 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const [state, setState] = useState<SharedRoomState | null>(
     adapter?.getInitialState() ?? null,
   );
-  const [selectedPrompt, setSelectedPrompt] = useState<PromptDefinition | null>(null);
+  const [openSubControl, setOpenSubControl] = useState<string | null>(null);
   const [misfiredControl, setMisfiredControl] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
-  const miniStageRef = useRef<HTMLElement>(null);
 
   // Derive role and controls unconditionally (before any early returns) to
   // satisfy the Rules of Hooks.
@@ -442,22 +470,14 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     };
   }, [adapter, playerId, playerName]);
 
-  // Close mini-game on Escape.
-  const closeMiniGame = useCallback(() => setSelectedPrompt(null), []);
+  const closeSubControls = useCallback(() => setOpenSubControl(null), []);
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeMiniGame();
+      if (e.key === 'Escape') closeSubControls();
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [closeMiniGame]);
-
-  // Close mini-game on click outside.
-  const handleBackdropClick = useCallback((e: React.MouseEvent) => {
-    if (miniStageRef.current && !miniStageRef.current.contains(e.target as Node)) {
-      closeMiniGame();
-    }
-  }, [closeMiniGame]);
+  }, [closeSubControls]);
 
   // ── Render gates (no hooks below this point) ──────────────
 
@@ -600,7 +620,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
                 <div
                   className={[
                     'prompt-banner',
-                    selectedPrompt?.id === prompt.id ? 'active' : '',
+                    openSubControl === prompt.actionLabel ? 'active' : '',
                     urgent ? 'urgent' : '',
                   ].filter(Boolean).join(' ')}
                   key={prompt.id}
@@ -640,14 +660,12 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
         </section>
 
         <section className={`station stack station-${role.id}`}>
-          <div className="console-head">
-            <span className="eyebrow">Station Controls</span>
-            <h2 style={{ marginTop: 8 }}>{role.name} Console</h2>
-          </div>
           <div className="command-board">
             {controls.map(control => {
               const prompt = actionablePrompts.find(p => p.actionLabel === control);
-              const isActive = selectedPrompt?.id === prompt?.id;
+              const controlDef = getControlDefinition(control);
+              const subControlKeys = controlDef ? Object.keys(controlDef.subControls) : [];
+              const isExpanded = openSubControl === control;
               const hasPrompt = !!prompt;
               const skin = getControlSkin(control);
 
@@ -656,7 +674,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
                   className={[
                     'panel-muted button-card',
                     `button-card-${role.id}`,
-                    isActive ? 'active' : '',
+                    isExpanded ? 'active' : '',
                     misfiredControl === control ? 'misfired' : '',
                   ].filter(Boolean).join(' ')}
                   key={control}
@@ -664,49 +682,63 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
                   <button
                     className={`control-button control-button-${role.id} control-skin-${skin}${hasPrompt ? ' ready' : ''}`}
                     onClick={() => {
-                      if (prompt) {
-                        adapter.claimPrompt(prompt.id, playerId);
-                        setSelectedPrompt(prompt);
+                      if (!prompt) {
+                        adapter.misfireControl(playerId, control);
+                        setMisfiredControl(control);
                         return;
                       }
-                      adapter.misfireControl(playerId, control);
-                      setMisfiredControl(control);
+
+                      if (requiresSubControlChoice(controlDef)) {
+                        setOpenSubControl(current => (current === control ? null : control));
+                        return;
+                      }
+
+                      adapter.resolvePrompt(prompt.id);
+                      setOpenSubControl(null);
                     }}
                     type="button"
                   >
                     <ControlFace skin={skin} label={compactLabel(control)} hasPrompt={hasPrompt} />
                   </button>
+                  {isExpanded ? (
+                    <div className="subcontrol-list">
+                      {subControlKeys.map(subControlKey => {
+                        const subLabel = formatSubControlLabel(subControlKey);
+                        const isMatch = prompt?.selectionLabel === subLabel;
+
+                        return (
+                          <button
+                            className={`subcontrol-button${isMatch ? ' match' : ''}`}
+                            key={subControlKey}
+                            onClick={() => {
+                              if (!prompt) {
+                                adapter.misfireControl(playerId, control);
+                                setMisfiredControl(control);
+                                setOpenSubControl(null);
+                                return;
+                              }
+
+                              if (prompt.selectionLabel === subLabel) {
+                                adapter.resolvePrompt(prompt.id);
+                              } else {
+                                adapter.misfireControl(playerId, `${control}:${subControlKey}`);
+                                setMisfiredControl(control);
+                              }
+                              setOpenSubControl(null);
+                            }}
+                            type="button"
+                          >
+                            {subLabel}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
                 </div>
               );
             })}
           </div>
         </section>
-
-        {selectedPrompt ? (
-          // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-          <div className="mini-backdrop" onClick={handleBackdropClick}>
-            <section className={`mini-stage mini-stage-${role.id}`} ref={miniStageRef}>
-              <div>
-                <span className="eyebrow">Mini-Game</span>
-                <h3 style={{ marginTop: 8 }}>
-                  {selectedPrompt.actionLabel}
-                  {selectedPrompt.selectionLabel ? ` / ${selectedPrompt.selectionLabel}` : ''}
-                </h3>
-              </div>
-              <MiniGamePanel
-                miniGameId={selectedPrompt.miniGameId}
-                onResolve={() => {
-                  adapter.resolvePrompt(selectedPrompt.id);
-                  setSelectedPrompt(null);
-                }}
-                onFail={() => {
-                  adapter.failPrompt(selectedPrompt.id);
-                  setSelectedPrompt(null);
-                }}
-              />
-            </section>
-          </div>
-        ) : null}
       </div>
     </main>
   );
