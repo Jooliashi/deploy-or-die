@@ -41,9 +41,9 @@ function coRoomToState(room: LoadedJazzRoom): SharedRoomState {
   const prompts: PromptDefinition[] = room.deploy.prompts.map(p => ({
     id: p.promptId,
     label: p.label,
-    hint: p.hint,
     ownerRole: p.ownerRole as RoleId,
     actionLabel: p.actionLabel,
+    selectionLabel: p.selectionLabel,
     miniGameId: p.miniGameId as PromptDefinition['miniGameId'],
     timerSeconds: p.timerSeconds,
     status: p.status as PromptStatus,
@@ -168,6 +168,10 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     }
   }
 
+  misfireControl(_playerId: string, _controlLabel: string): void {
+    this.#adjustValuation(-20_000);
+  }
+
   subscribe(listener: (state: SharedRoomState) => void): () => void {
     this.#listeners.add(listener);
     listener(coRoomToState(this.#room));
@@ -265,9 +269,9 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
         this.#room.deploy.prompts.$jazz.push({
           promptId: `prompt-${Date.now()}-${promptCounter}`,
           label: template.label,
-          hint: template.hint,
           ownerRole: template.ownerRole,
           actionLabel: template.actionLabel,
+          selectionLabel: template.selectionLabel,
           miniGameId: template.miniGameId,
           timerSeconds: template.timerSeconds,
           status: 'queued',
@@ -284,7 +288,14 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     if (isDemo) {
       const prompts = pickRandomPrompts(1, this.#playerControls);
       return prompts.length > 0
-        ? { label: prompts[0].label, hint: prompts[0].hint, ownerRole: prompts[0].ownerRole, actionLabel: prompts[0].actionLabel, miniGameId: prompts[0].miniGameId, timerSeconds: prompts[0].timerSeconds }
+        ? {
+            label: prompts[0].label,
+            ownerRole: prompts[0].ownerRole,
+            actionLabel: prompts[0].actionLabel,
+            selectionLabel: prompts[0].selectionLabel,
+            miniGameId: prompts[0].miniGameId,
+            timerSeconds: prompts[0].timerSeconds,
+          }
         : null;
     }
     const otherRoles = rolesInGame.filter(r => r !== playerRole);
@@ -386,9 +397,9 @@ export function createJazzRoom(options: {
     initialPrompts.map(p => ({
       promptId: p.id,
       label: p.label,
-      hint: p.hint,
       ownerRole: p.ownerRole,
       actionLabel: p.actionLabel,
+      selectionLabel: p.selectionLabel,
       miniGameId: p.miniGameId,
       timerSeconds: p.timerSeconds,
       status: p.status,

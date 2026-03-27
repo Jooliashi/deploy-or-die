@@ -4,9 +4,9 @@ import { co, z } from 'jazz-tools';
 export const JazzPrompt = co.map({
   promptId: z.string(),
   label: z.string(),
-  hint: z.string(),
   ownerRole: z.string(),
   actionLabel: z.string(),
+  selectionLabel: z.string(),
   miniGameId: z.string(),
   timerSeconds: z.number(),
   status: z.string(), // 'queued' | 'active' | 'resolved' | 'failed' | 'expired'

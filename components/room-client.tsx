@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MiniGamePanel } from '@/components/minigames';
 import { Sparkline } from '@/components/sparkline';
 import { WaitingRoom } from '@/components/waiting-room';
-import { roles } from '@/lib/game/data';
+import { getControlLabels, roles } from '@/lib/game/data';
 import type { PromptDefinition } from '@/lib/game/types';
 import {
   createJazzRoom,
@@ -347,10 +347,13 @@ function formatValuation(v: number): string {
 }
 
 function getPlayerControls(roleId: string): string[] {
-  const own = roles.find(r => r.id === roleId);
-  const others = roles.filter(r => r.id !== roleId);
-  const extra = others.flatMap(r => r.controls).sort(() => Math.random() - 0.5).slice(0, 2);
-  return [...(own?.controls ?? []), ...extra];
+  const own = getControlLabels(roleId as typeof roles[number]['id']);
+  const others = roles
+    .filter(r => r.id !== roleId)
+    .flatMap(r => r.controls.map(control => control.label))
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 2);
+  return [...own, ...others];
 }
 
 export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
@@ -384,6 +387,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     adapter?.getInitialState() ?? null,
   );
   const [selectedPrompt, setSelectedPrompt] = useState<PromptDefinition | null>(null);
+  const [misfiredControl, setMisfiredControl] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const miniStageRef = useRef<HTMLElement>(null);
 
@@ -419,6 +423,12 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    if (!misfiredControl) return;
+    const timeout = window.setTimeout(() => setMisfiredControl(null), 320);
+    return () => window.clearTimeout(timeout);
+  }, [misfiredControl]);
 
   // Join the room and subscribe to state.
   useEffect(() => {
@@ -600,7 +610,10 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
                       {promptGlyph[prompt.status]}
                     </div>
                     <div className="prompt-meta">
-                      <span>{prompt.actionLabel}</span>
+                      <span>
+                        {prompt.actionLabel}
+                        {prompt.selectionLabel ? ` / ${prompt.selectionLabel}` : ''}
+                      </span>
                       <span className={`prompt-timer${urgent ? ' timer-urgent' : ''}`}>
                         {remaining}s
                       </span>
@@ -644,16 +657,20 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
                     'panel-muted button-card',
                     `button-card-${role.id}`,
                     isActive ? 'active' : '',
+                    misfiredControl === control ? 'misfired' : '',
                   ].filter(Boolean).join(' ')}
                   key={control}
                 >
                   <button
                     className={`control-button control-button-${role.id} control-skin-${skin}${hasPrompt ? ' ready' : ''}`}
-                    disabled={!hasPrompt}
                     onClick={() => {
-                      if (!prompt) return;
-                      adapter.claimPrompt(prompt.id, playerId);
-                      setSelectedPrompt(prompt);
+                      if (prompt) {
+                        adapter.claimPrompt(prompt.id, playerId);
+                        setSelectedPrompt(prompt);
+                        return;
+                      }
+                      adapter.misfireControl(playerId, control);
+                      setMisfiredControl(control);
                     }}
                     type="button"
                   >
@@ -671,7 +688,10 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
             <section className={`mini-stage mini-stage-${role.id}`} ref={miniStageRef}>
               <div>
                 <span className="eyebrow">Mini-Game</span>
-                <h3 style={{ marginTop: 8 }}>{selectedPrompt.actionLabel}</h3>
+                <h3 style={{ marginTop: 8 }}>
+                  {selectedPrompt.actionLabel}
+                  {selectedPrompt.selectionLabel ? ` / ${selectedPrompt.selectionLabel}` : ''}
+                </h3>
               </div>
               <MiniGamePanel
                 miniGameId={selectedPrompt.miniGameId}

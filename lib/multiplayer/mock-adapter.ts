@@ -103,6 +103,20 @@ export class MockMultiplayerAdapter implements MultiplayerAdapter {
     this.#emit();
   }
 
+  misfireControl(_playerId: string, _controlLabel: string) {
+    const newVal = Math.max(this.#state.deploy.valuation - 20_000, 0);
+    this.#state = {
+      ...this.#state,
+      deploy: {
+        ...this.#state.deploy,
+        valuation: newVal,
+        valuationHistory: [...this.#state.deploy.valuationHistory, newVal],
+        bankrupt: newVal <= 0,
+      },
+    };
+    this.#emit();
+  }
+
   subscribe(listener: (state: SharedRoomState) => void) {
     this.#listeners.add(listener);
     listener(this.#state);

@@ -1,27 +1,33 @@
 export type RoleId = 'frontend' | 'backend' | 'database' | 'success';
 
-export type MiniGameId =
-  | 'visual-patch'
-  | 'route-repair'
-  | 'traffic-balance'
-  | 'message-triage';
+export type MiniGameId = string;
 
 export type PromptStatus = 'queued' | 'active' | 'resolved' | 'failed' | 'expired';
+
+export interface PromptTemplateDefinition {
+  label: string;
+  timerSeconds: number;
+}
+
+export interface ControlDefinition {
+  label: string;
+  miniGameId?: MiniGameId;
+  subControls: Record<string, PromptTemplateDefinition[]>;
+}
 
 export interface RoleDefinition {
   id: RoleId;
   name: string;
   summary: string;
-  controls: string[];
-  miniGames: MiniGameId[];
+  controls: ControlDefinition[];
 }
 
 export interface PromptDefinition {
   id: string;
   label: string;
-  hint: string;
   ownerRole: RoleId;
   actionLabel: string;
+  selectionLabel: string;
   miniGameId: MiniGameId;
   timerSeconds: number;
   status: PromptStatus;

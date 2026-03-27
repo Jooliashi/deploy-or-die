@@ -22,10 +22,10 @@ export interface MultiplayerAdapter {
   claimPrompt(promptId: string, playerId: string): void;
   resolvePrompt(promptId: string): void;
   failPrompt(promptId: string): void;
+  misfireControl(playerId: string, controlLabel: string): void;
   subscribe(listener: (state: SharedRoomState) => void): () => void;
 }
 
 export interface ClaimedPrompt extends PromptDefinition {
   claimedBy?: string;
 }
-
