@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { JazzWrapper } from '@/components/jazz-wrapper';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -14,7 +15,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <JazzWrapper>{children}</JazzWrapper>
+      </body>
     </html>
   );
 }

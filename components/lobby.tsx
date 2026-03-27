@@ -18,8 +18,8 @@ export function Lobby() {
         <span className="eyebrow">Lobby</span>
         <h2>Spin up a room and start a doomed deploy.</h2>
         <p>
-          This scaffold uses a local multiplayer adapter now. Swap it for Jazz once
-          you define the room schema and presence model.
+          Multiplayer is powered by Jazz. Room state syncs in real-time across all
+          connected players via Jazz Cloud.
         </p>
         <div className="stack" style={{ marginTop: 16 }}>
           <label className="stack" htmlFor="player-name">
@@ -33,7 +33,7 @@ export function Lobby() {
             />
           </label>
           <div className="tag-row">
-            <span className="tag">Jazz room sync placeholder</span>
+            <span className="tag">Jazz real-time sync</span>
             <span className="tag">3 MVP roles</span>
             <span className="tag">Standalone mini-games</span>
           </div>

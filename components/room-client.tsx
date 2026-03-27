@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { MiniGamePanel } from '@/components/minigames';
 import { roles } from '@/lib/game/data';
 import type { PromptDefinition } from '@/lib/game/types';
-import { multiplayerAdapter } from '@/lib/multiplayer/mock-adapter';
-import type { SharedRoomState } from '@/lib/multiplayer/types';
+import { createJazzRoom, JazzMultiplayerAdapter } from '@/lib/multiplayer/jazz-adapter';
+import type { MultiplayerAdapter, SharedRoomState } from '@/lib/multiplayer/types';
 
 interface RoomClientProps {
   roomCode: string;
@@ -51,12 +51,28 @@ function compactLabel(control: string) {
 }
 
 export function RoomClient({ roomCode, playerName }: RoomClientProps) {
+  const adapterRef = useRef<JazzMultiplayerAdapter | null>(null);
+
+  // Create the Jazz room + adapter once on mount.
+  const adapter = useMemo<MultiplayerAdapter>(() => {
+    const room = createJazzRoom();
+    const jazzAdapter = new JazzMultiplayerAdapter(room);
+    adapterRef.current = jazzAdapter;
+    return jazzAdapter;
+  }, []);
+
   const [state, setState] = useState<SharedRoomState>(
-    multiplayerAdapter.getInitialState()
+    adapter.getInitialState()
   );
   const [selectedPrompt, setSelectedPrompt] = useState<PromptDefinition | null>(null);
 
-  useEffect(() => multiplayerAdapter.subscribe(setState), []);
+  useEffect(() => {
+    const unsubscribe = adapter.subscribe(setState);
+    return () => {
+      unsubscribe();
+      adapterRef.current?.dispose();
+    };
+  }, [adapter]);
 
   const currentRole = state.players.find(player => player.name === playerName)?.role ?? 'frontend';
   const role = roles.find(entry => entry.id === currentRole) ?? roles[0];
@@ -155,7 +171,7 @@ export function RoomClient({ roomCode, playerName }: RoomClientProps) {
                       if (!prompt) {
                         return;
                       }
-                      multiplayerAdapter.claimPrompt(prompt.id, playerName);
+                      adapter.claimPrompt(prompt.id, playerName);
                       setSelectedPrompt(prompt);
                     }}
                     type="button"
@@ -177,11 +193,11 @@ export function RoomClient({ roomCode, playerName }: RoomClientProps) {
             <MiniGamePanel
               miniGameId={selectedPrompt.miniGameId}
               onResolve={() => {
-                multiplayerAdapter.resolvePrompt(selectedPrompt.id);
+                adapter.resolvePrompt(selectedPrompt.id);
                 setSelectedPrompt(null);
               }}
               onFail={() => {
-                multiplayerAdapter.failPrompt(selectedPrompt.id);
+                adapter.failPrompt(selectedPrompt.id);
                 setSelectedPrompt(null);
               }}
             />
