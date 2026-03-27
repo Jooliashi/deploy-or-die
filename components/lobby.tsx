@@ -1,16 +1,30 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
 
 const ROOM_CODE = 'SHIP-42';
 
+function generateRoomCode(): string {
+  const words = ['SHIP', 'FLUX', 'CORE', 'HELM', 'NODE', 'PUSH', 'SYNC', 'BOLT'];
+  const word = words[Math.floor(Math.random() * words.length)];
+  const num = Math.floor(Math.random() * 900) + 100; // 100-999
+  return `${word}-${num}`;
+}
+
 export function Lobby() {
+  const router = useRouter();
   const [name, setName] = useState('Engineer');
   const joinHref = useMemo(
     () => `/room/${ROOM_CODE}?name=${encodeURIComponent(name || 'Engineer')}`,
     [name]
   );
+
+  const createPrivateRoom = useCallback(() => {
+    const code = generateRoomCode();
+    router.push(`/room/${code}?name=${encodeURIComponent(name || 'Engineer')}`);
+  }, [name, router]);
 
   return (
     <div className="stack">
@@ -41,7 +55,11 @@ export function Lobby() {
             <Link className="button" href={joinHref}>
               Enter Demo Room
             </Link>
-            <button className="button secondary" type="button">
+            <button
+              className="button secondary"
+              type="button"
+              onClick={createPrivateRoom}
+            >
               Create Private Room
             </button>
           </div>

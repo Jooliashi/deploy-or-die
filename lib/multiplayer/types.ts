@@ -9,10 +9,14 @@ export interface PlayerPresence {
 export interface SharedRoomState {
   deploy: DeployState;
   players: PlayerPresence[];
+  gameStarted: boolean;
 }
 
 export interface MultiplayerAdapter {
   getInitialState(): SharedRoomState;
+  addPlayer(name: string): void;
+  removePlayer(name: string): void;
+  startGame(): void;
   claimPrompt(promptId: string, playerId: string): void;
   resolvePrompt(promptId: string): void;
   failPrompt(promptId: string): void;

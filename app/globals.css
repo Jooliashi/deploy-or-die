@@ -34,7 +34,7 @@ body {
   color: var(--text);
   font-family: var(--sans);
   min-height: 100vh;
-  overflow: hidden;
+  min-height: 100dvh;
 }
 
 a {
@@ -233,8 +233,13 @@ button {
 }
 
 .room-shell {
-  min-height: calc(100vh - 32px);
+  width: min(1240px, calc(100vw - 32px));
+  height: calc(100vh - 32px);
+  height: calc(100dvh - 32px);
+  margin: 16px auto 0;
   padding: 16px;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
@@ -244,6 +249,7 @@ button {
   gap: 14px;
   align-items: stretch;
   margin-bottom: 14px;
+  flex-shrink: 0;
 }
 
 .station,
@@ -254,6 +260,9 @@ button {
 .station-body {
   display: grid;
   gap: 14px;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .station-shell {
@@ -285,7 +294,7 @@ button {
 
 .prompt-overlay {
   position: relative;
-  z-index: 30;
+  z-index: 10;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
@@ -355,6 +364,43 @@ button {
   line-height: 1.1;
 }
 
+/* Prompt countdown timer bar */
+.prompt-timer-bar {
+  margin-top: 10px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.prompt-timer-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff6b6b, #ffd93d);
+  transition: width 1s linear;
+}
+
+/* Urgent prompt — pulsing red border */
+.prompt-banner.urgent {
+  border-color: rgba(255, 77, 77, 0.7);
+  animation: banner-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both,
+             urgent-pulse 0.8s ease-in-out infinite;
+}
+@keyframes urgent-pulse {
+  0%, 100% { box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3); }
+  50% { box-shadow: 0 0 24px rgba(255, 77, 77, 0.35), 0 16px 40px rgba(0, 0, 0, 0.3); }
+}
+
+.prompt-timer {
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-urgent {
+  color: var(--danger);
+  font-weight: 700;
+}
+
 .meter {
   overflow: hidden;
   height: 10px;
@@ -367,6 +413,16 @@ button {
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #4ce59f, #8affd1);
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.5s ease;
+}
+
+/* Health meter color escalation */
+.meter.meter-low > span {
+  background: linear-gradient(90deg, #f2d355, #ff9e3d);
+}
+.meter.meter-critical > span {
+  background: linear-gradient(90deg, #ff6b6b, #ff4d4d);
 }
 
 .compact-stat {
@@ -400,6 +456,15 @@ button {
   background: radial-gradient(circle at 35% 35%, #8f95a3, #4f5560 70%);
 }
 
+.signal.danger {
+  background: radial-gradient(circle at 35% 35%, #ff9e9e, #d43434 70%);
+  animation: signal-breathe-danger 1s ease-in-out infinite;
+}
+@keyframes signal-breathe-danger {
+  0%, 100% { box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.16), 0 0 12px rgba(0, 0, 0, 0.4); }
+  50% { box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.16), 0 0 18px rgba(255, 77, 77, 0.6); }
+}
+
 .count-chip {
   display: inline-flex;
   width: fit-content;
@@ -429,14 +494,14 @@ button {
 .command-board {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  gap: 12px;
 }
 
 .button-card {
   display: grid;
-  gap: 16px;
+  gap: 10px;
   justify-items: center;
-  padding: 18px 16px 20px;
+  padding: 12px 12px 14px;
   background:
     linear-gradient(180deg, rgba(225, 220, 201, 0.24), rgba(77, 82, 92, 0.12)),
     #22262d;
@@ -450,12 +515,12 @@ button {
 .button-deck {
   width: 100%;
   display: grid;
-  gap: 14px;
+  gap: 8px;
 }
 
 .button-panel {
-  min-height: 94px;
-  padding: 14px;
+  min-height: 64px;
+  padding: 10px 14px;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background:
@@ -492,8 +557,8 @@ button {
 
 .control-button {
   appearance: none;
-  width: 112px;
-  height: 112px;
+  width: 80px;
+  height: 80px;
   border-radius: 999px;
   border: 0;
   padding: 0;
@@ -535,7 +600,7 @@ button {
 .mini-stage {
   position: absolute;
   inset: 24px;
-  z-index: 20;
+  z-index: 40;
   display: grid;
   align-content: start;
   padding: 20px;
@@ -555,7 +620,7 @@ button {
 }
 
 .mini-tile {
-  min-height: 112px;
+  min-height: 72px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background:
@@ -583,6 +648,242 @@ button {
   font-size: 12px;
 }
 
+/* ── Animations ────────────────────────────────────────────── */
+
+/* Button hover lift */
+.button {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(79, 137, 255, 0.3);
+}
+.button:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+.button.secondary:hover {
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.08);
+}
+
+/* Control button press — physical "push" feel */
+.control-button {
+  transition: transform 0.1s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.1s ease;
+}
+.control-button:not(:disabled):hover {
+  transform: scale(1.04);
+}
+.control-button:not(:disabled):active {
+  transform: scale(0.90) translateY(4px);
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.1),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.5),
+    0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.06s ease-out, box-shadow 0.06s ease-out;
+}
+
+/* Button card — glow pulse when a prompt is ready */
+.button-card {
+  transition: outline-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+}
+.button-card:has(.control-button.ready) {
+  animation: card-pulse 2s ease-in-out infinite;
+}
+@keyframes card-pulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(242, 215, 79, 0); }
+  50% { box-shadow: 0 0 24px rgba(242, 215, 79, 0.15); }
+}
+
+/* Signal warn — breathing glow */
+.signal.warn {
+  animation: signal-breathe 1.8s ease-in-out infinite;
+}
+@keyframes signal-breathe {
+  0%, 100% { box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.16), 0 0 12px rgba(0, 0, 0, 0.4); }
+  50% { box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.16), 0 0 18px rgba(220, 174, 46, 0.5); }
+}
+
+/* Toggle row — smooth activation */
+.toggle-row span {
+  transition: background 0.3s ease;
+}
+
+/* Prompt banner — slide in from top + fade */
+.prompt-banner {
+  animation: banner-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes banner-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Prompt banner active state transition */
+.prompt-banner.active {
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* Mini-stage — scale up from center */
+.mini-stage {
+  animation: stage-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes stage-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Health meter bar — smooth width changes */
+.meter > span {
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Health meter flash on change */
+.meter-flash {
+  animation: meter-pulse 0.4s ease-out;
+}
+@keyframes meter-pulse {
+  0% { filter: brightness(1); }
+  30% { filter: brightness(1.8); }
+  100% { filter: brightness(1); }
+}
+
+/* Mini-tile hover feedback */
+.mini-tile {
+  transition: transform 0.15s ease, border-color 0.2s ease;
+  cursor: default;
+}
+.mini-tile:hover {
+  transform: scale(1.03);
+}
+.mini-tile.target {
+  animation: tile-glow 2s ease-in-out infinite;
+}
+@keyframes tile-glow {
+  0%, 100% { box-shadow: inset 0 0 0 2px rgba(242, 211, 85, 0.2); }
+  50% { box-shadow: inset 0 0 0 2px rgba(242, 211, 85, 0.5), 0 0 20px rgba(242, 211, 85, 0.1); }
+}
+
+/* Stat value — number change emphasis */
+.stat-value {
+  transition: transform 0.2s ease;
+}
+
+/* Role glyph idle animation */
+.role-glyph {
+  transition: transform 0.2s ease;
+}
+.role-glyph:hover {
+  transform: rotate(8deg) scale(1.08);
+}
+
+/* ── Waiting Room ───────────────────────────────────────────── */
+
+.waiting-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.waiting-content {
+  width: 100%;
+  max-width: 520px;
+  display: grid;
+  gap: 28px;
+}
+
+.waiting-header {
+  text-align: center;
+}
+
+.waiting-title {
+  margin: 10px 0 6px;
+  font-size: clamp(28px, 5vw, 48px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.waiting-sub {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.waiting-players {
+  display: grid;
+  gap: 10px;
+}
+
+.waiting-section-head {
+  padding: 0 2px;
+}
+
+.player-list {
+  display: grid;
+  gap: 8px;
+}
+
+.player-slot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.player-slot.empty {
+  justify-content: center;
+  padding: 20px;
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.player-name {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.you-tag {
+  background: rgba(134, 203, 255, 0.14);
+  border-color: rgba(134, 203, 255, 0.28);
+  color: var(--accent);
+}
+
+.waiting-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.waiting-launch {
+  width: 100%;
+  padding: 16px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.waiting-launch.disabled {
+  opacity: 0.5;
+  cursor: default;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+
 @media (max-width: 960px) {
   .hero,
   .grid,
@@ -593,17 +894,19 @@ button {
     grid-template-columns: 1fr;
   }
 
-  body {
-    overflow: auto;
+  .room-shell {
+    height: auto;
+    min-height: 100dvh;
   }
 
-  .room-shell {
-    min-height: auto;
+  .station-body {
+    overflow-y: visible;
   }
 
   .mini-stage {
-    position: static;
-    inset: auto;
-    margin-top: 16px;
+    position: fixed;
+    inset: 16px;
+    z-index: 50;
+    margin-top: 0;
   }
 }

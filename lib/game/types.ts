@@ -5,7 +5,7 @@ export type MiniGameId =
   | 'route-repair'
   | 'traffic-balance';
 
-export type PromptStatus = 'queued' | 'active' | 'resolved' | 'failed';
+export type PromptStatus = 'queued' | 'active' | 'resolved' | 'failed' | 'expired';
 
 export interface RoleDefinition {
   id: RoleId;
@@ -24,6 +24,7 @@ export interface PromptDefinition {
   miniGameId: MiniGameId;
   timerSeconds: number;
   status: PromptStatus;
+  createdAt: number;
 }
 
 export interface DeployState {

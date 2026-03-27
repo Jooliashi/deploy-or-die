@@ -12,10 +12,6 @@ export default async function RoomPage({
   const { roomCode } = await params;
   const { name } = await searchParams;
 
-  return (
-    <main className="shell">
-      <RoomClient roomCode={roomCode} playerName={name ?? 'Alex'} />
-    </main>
-  );
+  return <RoomClient roomCode={roomCode} playerName={name ?? 'Alex'} />;
 }
 

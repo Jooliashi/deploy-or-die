@@ -8,6 +8,7 @@ const initialState: SharedRoomState = {
     { id: 'p2', name: 'Jules', role: roles[1].id },
     { id: 'p3', name: 'Mina', role: roles[2].id },
   ],
+  gameStarted: false,
 };
 
 export class MockMultiplayerAdapter implements MultiplayerAdapter {
@@ -17,6 +18,33 @@ export class MockMultiplayerAdapter implements MultiplayerAdapter {
 
   getInitialState() {
     return this.#state;
+  }
+
+  addPlayer(name: string) {
+    const exists = this.#state.players.some(p => p.name === name);
+    if (exists) return;
+    const role = roles[this.#state.players.length % roles.length].id;
+    this.#state = {
+      ...this.#state,
+      players: [
+        ...this.#state.players,
+        { id: `p${Date.now()}`, name, role },
+      ],
+    };
+    this.#emit();
+  }
+
+  removePlayer(name: string) {
+    this.#state = {
+      ...this.#state,
+      players: this.#state.players.filter(p => p.name !== name),
+    };
+    this.#emit();
+  }
+
+  startGame() {
+    this.#state = { ...this.#state, gameStarted: true };
+    this.#emit();
   }
 
   claimPrompt(promptId: string, _playerId: string) {

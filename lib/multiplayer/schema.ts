@@ -9,7 +9,8 @@ export const JazzPrompt = co.map({
   actionLabel: z.string(),
   miniGameId: z.string(),
   timerSeconds: z.number(),
-  status: z.string(), // 'queued' | 'active' | 'resolved' | 'failed'
+  status: z.string(), // 'queued' | 'active' | 'resolved' | 'failed' | 'expired'
+  createdAt: z.number(), // Date.now() timestamp when the prompt was spawned
 });
 
 export const JazzPromptList = co.list(JazzPrompt);
@@ -36,4 +37,5 @@ export const JazzPlayerList = co.list(JazzPlayer);
 export const JazzRoom = co.map({
   deploy: JazzDeployState,
   players: JazzPlayerList,
+  gameStarted: z.boolean(),
 });
