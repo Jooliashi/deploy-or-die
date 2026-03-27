@@ -439,6 +439,7 @@ button {
 .signal {
   width: 14px;
   height: 14px;
+  flex-shrink: 0;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.16), 0 0 12px rgba(0, 0, 0, 0.4);
@@ -493,7 +494,8 @@ button {
 
 .command-board {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(2, auto);
   gap: 12px;
 }
 
@@ -519,24 +521,47 @@ button {
 }
 
 .button-panel {
-  min-height: 64px;
   padding: 10px 14px;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background:
     radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 40%),
     linear-gradient(180deg, rgba(40, 43, 50, 0.9), rgba(18, 20, 25, 0.95));
-  display: grid;
-  align-content: space-between;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .button-caption {
   color: #f3f1e8;
   font-family: var(--mono);
-  font-size: 20px;
-  line-height: 1;
+  font-size: 16px;
+  line-height: 1.2;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.button-timer {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+}
+
+.button-card-urgent {
+  border-color: rgba(255, 77, 77, 0.5);
+  animation: card-pulse-urgent 0.8s ease-in-out infinite;
+}
+
+@keyframes card-pulse-urgent {
+  0%, 100% { box-shadow: 0 0 0 rgba(255, 77, 77, 0); }
+  50% { box-shadow: 0 0 20px rgba(255, 77, 77, 0.2); }
 }
 
 .toggle-row {
@@ -597,10 +622,24 @@ button {
   gap: 16px;
 }
 
-.mini-stage {
+.mini-backdrop {
   position: absolute;
-  inset: 24px;
+  inset: 0;
   z-index: 40;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: var(--radius-lg);
+  animation: backdrop-fade 0.2s ease both;
+}
+
+@keyframes backdrop-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.mini-stage {
+  width: min(480px, calc(100% - 48px));
   display: grid;
   align-content: start;
   padding: 20px;
@@ -646,6 +685,70 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 12px;
+}
+
+/* ── Valuation & Stock Chart ───────────────────────────────── */
+
+.valuation-card {
+  overflow: hidden;
+}
+
+.valuation-value {
+  font-variant-numeric: tabular-nums;
+  transition: color 0.3s ease;
+}
+
+.valuation-value.up {
+  color: var(--success);
+}
+
+.valuation-value.down {
+  color: var(--danger);
+}
+
+.sparkline {
+  display: block;
+  width: 100%;
+}
+
+/* ── Game Over ─────────────────────────────────────────────── */
+
+.game-over-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-over-content {
+  text-align: center;
+  max-width: 520px;
+  display: grid;
+  gap: 16px;
+}
+
+.game-over-title {
+  margin: 0;
+  font-size: clamp(48px, 10vw, 96px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--danger);
+  animation: bankrupt-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes bankrupt-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.game-over-sub {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.game-over-chart {
+  padding: 16px 0;
 }
 
 /* ── Animations ────────────────────────────────────────────── */
@@ -884,13 +987,171 @@ button {
   color: var(--text-muted);
 }
 
+/* ── Landing Page ──────────────────────────────────────────── */
+
+.landing-wrapper {
+  display: grid;
+  gap: 40px;
+  padding: 24px 0 48px;
+}
+
+.landing-top {
+  display: grid;
+  gap: 20px;
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.landing-title {
+  margin: 0;
+  font-size: clamp(32px, 6vw, 56px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+/* Name bar — inline label + input */
+.landing-name-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 6px 6px 6px 16px;
+}
+
+.landing-name-label {
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.landing-name-input {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 10px 12px !important;
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+/* Two action cards side by side */
+.landing-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.landing-card {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.landing-card-head {
+  display: grid;
+  gap: 8px;
+}
+
+.landing-card-title {
+  margin: 0;
+  font-size: 22px;
+}
+
+.landing-card-desc {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.landing-card-btn {
+  width: 100%;
+  text-align: center;
+  padding: 13px;
+  font-size: 15px;
+}
+
+.landing-mp-actions {
+  display: grid;
+  gap: 14px;
+  margin-top: auto;
+}
+
+.landing-or {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.landing-or > span:first-child,
+.landing-or > span:last-child {
+  height: 1px;
+  background: var(--border);
+}
+
+.landing-or-text {
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.landing-join-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.landing-join-row .button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.landing-bottom {
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.landing-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.landing-info-card {
+  padding: 18px;
+}
+
+.landing-info-card h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.landing-info-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 @media (max-width: 960px) {
-  .hero,
-  .grid,
   .top-rail,
   .prompt-overlay,
   .command-board,
-  .mini-grid {
+  .mini-grid,
+  .landing-cards,
+  .landing-info-grid {
     grid-template-columns: 1fr;
   }
 
@@ -903,10 +1164,14 @@ button {
     overflow-y: visible;
   }
 
-  .mini-stage {
+  .mini-backdrop {
     position: fixed;
-    inset: 16px;
+    inset: 0;
     z-index: 50;
-    margin-top: 0;
+    border-radius: 0;
+  }
+
+  .mini-stage {
+    width: min(480px, calc(100% - 32px));
   }
 }

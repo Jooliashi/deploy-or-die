@@ -1,5 +1,5 @@
 import { co } from 'jazz-tools';
-import { demoDeployState, pickRandomPrompts, roles } from '@/lib/game/data';
+import { demoDeployState, pickRandomPrompts, roles, STARTING_VALUATION } from '@/lib/game/data';
 import type { DeployState, PromptDefinition, PromptStatus, RoleId } from '@/lib/game/types';
 import {
   JazzDeployState,
@@ -7,6 +7,7 @@ import {
   JazzPlayerList,
   JazzPromptList,
   JazzRoom,
+  JazzValuationHistory,
 } from '@/lib/multiplayer/schema';
 import type { MultiplayerAdapter, PlayerPresence, SharedRoomState } from '@/lib/multiplayer/types';
 
@@ -14,9 +15,9 @@ import type { MultiplayerAdapter, PlayerPresence, SharedRoomState } from '@/lib/
 // Helpers to convert between Jazz CoValues and plain game types
 // ---------------------------------------------------------------------------
 
-/** A JazzRoom with deploy.prompts and players deeply loaded. */
+/** A JazzRoom with deploy.prompts, valuationHistory, and players deeply loaded. */
 type LoadedJazzRoom = co.loaded<typeof JazzRoom, {
-  deploy: { prompts: { $each: true } };
+  deploy: { prompts: { $each: true }; valuationHistory: true };
   players: { $each: true };
 }>;
 
@@ -38,10 +39,11 @@ function coRoomToState(room: LoadedJazzRoom): SharedRoomState {
 
   const deploy: DeployState = {
     roomCode: room.deploy.roomCode,
-    deployHealth: room.deploy.deployHealth,
-    phaseLabel: room.deploy.phaseLabel,
+    valuation: room.deploy.valuation,
+    valuationHistory: [...room.deploy.valuationHistory],
     timeRemainingSeconds: room.deploy.timeRemainingSeconds,
     prompts,
+    bankrupt: room.deploy.bankrupt,
   };
 
   const players: PlayerPresence[] = room.players.map(p => ({
@@ -57,30 +59,23 @@ function coRoomToState(room: LoadedJazzRoom): SharedRoomState {
 // JazzMultiplayerAdapter
 // ---------------------------------------------------------------------------
 
-/** Map health ranges to phase labels. */
-function phaseForHealth(health: number): string {
-  if (health > 80) return 'Smooth Sailing';
-  if (health > 60) return 'Incident Spiral';
-  if (health > 40) return 'Fire Drill';
-  if (health > 20) return 'Meltdown';
-  return 'Total Collapse';
-}
-
 export class JazzMultiplayerAdapter implements MultiplayerAdapter {
   #room: LoadedJazzRoom;
   #listeners = new Set<(state: SharedRoomState) => void>();
   #unsubscribe: (() => void) | null = null;
   #tickInterval: ReturnType<typeof setInterval> | null = null;
-  #demoRole: RoleId | undefined;
+  /** The set of actionLabels the local player can handle. When set, spawned
+   *  prompts are filtered to only those the player has buttons for. */
+  #playerControls: string[] | undefined;
 
-  constructor(room: LoadedJazzRoom, demoRole?: RoleId) {
+  constructor(room: LoadedJazzRoom, playerControls?: string[]) {
     this.#room = room;
-    this.#demoRole = demoRole;
+    this.#playerControls = playerControls;
 
     // Subscribe to changes from Jazz and forward to local listeners.
     this.#unsubscribe = JazzRoom.subscribe(
       room.$jazz.id,
-      { resolve: { deploy: { prompts: { $each: true } }, players: { $each: true } } },
+      { resolve: { deploy: { prompts: { $each: true }, valuationHistory: true }, players: { $each: true } } },
       (updated) => {
         this.#room = updated;
         this.#emit();
@@ -131,8 +126,7 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     const prompt = this.#room.deploy.prompts.find(p => p.promptId === promptId);
     if (prompt) {
       prompt.$jazz.set('status', 'resolved');
-      const newHealth = Math.min(this.#room.deploy.deployHealth + 6, 100);
-      this.#room.deploy.$jazz.set('deployHealth', newHealth);
+      this.#adjustValuation(50_000);
       this.#spawnIfNeeded();
     }
   }
@@ -141,8 +135,7 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     const prompt = this.#room.deploy.prompts.find(p => p.promptId === promptId);
     if (prompt) {
       prompt.$jazz.set('status', 'failed');
-      const newHealth = Math.max(this.#room.deploy.deployHealth - 14, 0);
-      this.#room.deploy.$jazz.set('deployHealth', newHealth);
+      this.#adjustValuation(-120_000);
       this.#spawnIfNeeded();
     }
   }
@@ -161,12 +154,23 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     this.#listeners.clear();
   }
 
+  /** Adjust valuation by delta, record in history, check for bankruptcy. */
+  #adjustValuation(delta: number): void {
+    const newVal = Math.max(this.#room.deploy.valuation + delta, 0);
+    this.#room.deploy.$jazz.set('valuation', newVal);
+    this.#room.deploy.valuationHistory.$jazz.push(newVal);
+
+    if (newVal <= 0 && !this.#room.deploy.bankrupt) {
+      this.#room.deploy.$jazz.set('bankrupt', true);
+    }
+  }
+
   /** Game tick — runs every second. Expires overdue prompts and updates timers. */
   #tick(): void {
-    if (!this.#room.gameStarted) return;
+    if (!this.#room.gameStarted || this.#room.deploy.bankrupt) return;
 
     const now = Date.now();
-    let healthDelta = 0;
+    let valuationDelta = 0;
     let expired = false;
 
     // Check each live prompt for expiration.
@@ -176,21 +180,24 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
       const elapsed = (now - p.createdAt) / 1000;
       if (elapsed >= p.timerSeconds) {
         p.$jazz.set('status', 'expired');
-        healthDelta -= 10;
+        valuationDelta -= 80_000;
         expired = true;
       }
     }
 
-    // Apply health changes from expirations.
-    if (healthDelta !== 0) {
-      const newHealth = Math.max(this.#room.deploy.deployHealth + healthDelta, 0);
-      this.#room.deploy.$jazz.set('deployHealth', newHealth);
+    // Apply valuation changes from expirations.
+    if (valuationDelta !== 0) {
+      this.#adjustValuation(valuationDelta);
     }
 
-    // Update phase label based on current health.
-    const currentPhase = phaseForHealth(this.#room.deploy.deployHealth);
-    if (this.#room.deploy.phaseLabel !== currentPhase) {
-      this.#room.deploy.$jazz.set('phaseLabel', currentPhase);
+    // Small natural valuation drift (slight upward when stable).
+    const liveCount = this.#room.deploy.prompts.filter(
+      p => p.status === 'queued' || p.status === 'active',
+    ).length;
+    if (liveCount > 0 && valuationDelta === 0) {
+      // Slight random drift: tends down under pressure.
+      const drift = (Math.random() - 0.6) * 8_000;
+      this.#adjustValuation(drift);
     }
 
     // Decrement global timer.
@@ -215,9 +222,8 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     const deficit = 3 - live.length;
     if (deficit <= 0) return;
 
-    // In demo mode, only spawn prompts for the player's role so all prompts
-    // are actionable from their single station.
-    const newPrompts = pickRandomPrompts(deficit, this.#demoRole);
+    // Only spawn prompts that match the player's available controls.
+    const newPrompts = pickRandomPrompts(deficit, this.#playerControls);
     for (const p of newPrompts) {
       this.#room.deploy.prompts.$jazz.push({
         promptId: p.id,
@@ -248,12 +254,12 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
 /** Well-known demo room code that skips the waiting room. */
 export const DEMO_ROOM_CODE = 'SHIP-42';
 
-export function createJazzRoom(roomCode: string, demoRole?: RoleId): LoadedJazzRoom {
+export function createJazzRoom(roomCode: string, playerControls?: string[]): LoadedJazzRoom {
   const isDemo = roomCode === DEMO_ROOM_CODE;
 
-  // In demo mode, seed prompts for the player's specific role only.
-  const initialPrompts = isDemo && demoRole
-    ? pickRandomPrompts(3, demoRole)
+  // In demo mode, seed prompts that match the player's controls only.
+  const initialPrompts = isDemo && playerControls
+    ? pickRandomPrompts(3, playerControls)
     : demoDeployState.prompts;
 
   const prompts = JazzPromptList.create(
@@ -270,12 +276,15 @@ export function createJazzRoom(roomCode: string, demoRole?: RoleId): LoadedJazzR
     })),
   );
 
+  const valuationHistory = JazzValuationHistory.create([STARTING_VALUATION]);
+
   const deploy = JazzDeployState.create({
     roomCode,
-    deployHealth: demoDeployState.deployHealth,
-    phaseLabel: demoDeployState.phaseLabel,
+    valuation: STARTING_VALUATION,
+    valuationHistory,
     timeRemainingSeconds: demoDeployState.timeRemainingSeconds,
     prompts,
+    bankrupt: false,
   });
 
   // Demo rooms start with pre-seeded players and gameStarted=true so a single

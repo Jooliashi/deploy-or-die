@@ -29,9 +29,13 @@ export interface PromptDefinition {
 
 export interface DeployState {
   roomCode: string;
-  deployHealth: number;
-  phaseLabel: string;
+  /** Company valuation in dollars. Starts at 1_000_000. Bankruptcy at 0. */
+  valuation: number;
+  /** Recent valuation snapshots for the stock chart (one per tick). */
+  valuationHistory: number[];
   timeRemainingSeconds: number;
   prompts: PromptDefinition[];
+  /** True once valuation hits 0 — game over. */
+  bankrupt: boolean;
 }
 

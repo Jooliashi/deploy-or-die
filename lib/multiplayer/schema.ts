@@ -15,13 +15,16 @@ export const JazzPrompt = co.map({
 
 export const JazzPromptList = co.list(JazzPrompt);
 
+export const JazzValuationHistory = co.list(z.number());
+
 /** Shared deploy state visible to all players in the room. */
 export const JazzDeployState = co.map({
   roomCode: z.string(),
-  deployHealth: z.number(),
-  phaseLabel: z.string(),
+  valuation: z.number(),
+  valuationHistory: JazzValuationHistory,
   timeRemainingSeconds: z.number(),
   prompts: JazzPromptList,
+  bankrupt: z.boolean(),
 });
 
 /** A single player's presence in the room. */

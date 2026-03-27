@@ -157,11 +157,12 @@ export const promptPool: PromptTemplate[] = [
   },
 ];
 
-/** Pick `count` random prompts from the pool and assign them IDs + queued status. */
+/** Pick `count` random prompts from the pool and assign them IDs + queued status.
+ *  If `forControls` is provided, only pick prompts whose actionLabel is in the set. */
 let promptCounter = 0;
-export function pickRandomPrompts(count: number, forRole?: RoleId): PromptDefinition[] {
-  const pool = forRole
-    ? promptPool.filter(t => t.ownerRole === forRole)
+export function pickRandomPrompts(count: number, forControls?: string[]): PromptDefinition[] {
+  const pool = forControls
+    ? promptPool.filter(t => forControls.includes(t.actionLabel))
     : promptPool;
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count).map(template => {
@@ -175,11 +176,14 @@ export function pickRandomPrompts(count: number, forRole?: RoleId): PromptDefini
   });
 }
 
+export const STARTING_VALUATION = 1_000_000;
+
 export const demoDeployState: DeployState = {
   roomCode: 'SHIP-42',
-  deployHealth: 74,
-  phaseLabel: 'Incident Spiral',
-  timeRemainingSeconds: 178,
+  valuation: STARTING_VALUATION,
+  valuationHistory: [STARTING_VALUATION],
+  timeRemainingSeconds: 300,
   prompts: pickRandomPrompts(3),
+  bankrupt: false,
 };
 

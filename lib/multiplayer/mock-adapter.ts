@@ -61,11 +61,13 @@ export class MockMultiplayerAdapter implements MultiplayerAdapter {
   }
 
   resolvePrompt(promptId: string) {
+    const newVal = Math.min(this.#state.deploy.valuation + 50_000, 2_000_000);
     this.#state = {
       ...this.#state,
       deploy: {
         ...this.#state.deploy,
-        deployHealth: Math.min(this.#state.deploy.deployHealth + 6, 100),
+        valuation: newVal,
+        valuationHistory: [...this.#state.deploy.valuationHistory, newVal],
         prompts: this.#state.deploy.prompts.map(prompt =>
           prompt.id === promptId ? { ...prompt, status: 'resolved' } : prompt
         ),
@@ -75,11 +77,14 @@ export class MockMultiplayerAdapter implements MultiplayerAdapter {
   }
 
   failPrompt(promptId: string) {
+    const newVal = Math.max(this.#state.deploy.valuation - 120_000, 0);
     this.#state = {
       ...this.#state,
       deploy: {
         ...this.#state.deploy,
-        deployHealth: Math.max(this.#state.deploy.deployHealth - 14, 0),
+        valuation: newVal,
+        valuationHistory: [...this.#state.deploy.valuationHistory, newVal],
+        bankrupt: newVal <= 0,
         prompts: this.#state.deploy.prompts.map(prompt =>
           prompt.id === promptId ? { ...prompt, status: 'failed' } : prompt
         ),
