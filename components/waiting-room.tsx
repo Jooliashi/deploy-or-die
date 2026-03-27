@@ -28,8 +28,9 @@ export function WaitingRoom({ roomCode, playerId, playerName, state, adapter }: 
 
   const [copied, setCopied] = useState(false);
 
-  const copyRoomId = useCallback(() => {
-    navigator.clipboard.writeText(roomCode).then(() => {
+  const copyRoomLink = useCallback(() => {
+    const url = `${window.location.origin}/?join=${encodeURIComponent(roomCode)}`;
+    navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -46,7 +47,7 @@ export function WaitingRoom({ roomCode, playerId, playerName, state, adapter }: 
           <span className="eyebrow">Waiting Room</span>
           <h1 className="waiting-title">Room</h1>
           <p className="waiting-sub">
-            Share the room ID below with teammates. The game starts
+            Share the link below with teammates. The game starts
             automatically once everyone is ready.
           </p>
         </div>
@@ -54,11 +55,11 @@ export function WaitingRoom({ roomCode, playerId, playerName, state, adapter }: 
         <button
           className="panel-muted waiting-room-id"
           type="button"
-          onClick={copyRoomId}
-          title="Click to copy room ID"
+          onClick={copyRoomLink}
+          title="Click to copy join link"
         >
           <span className="waiting-room-id-text">{displayCode}</span>
-          <span className="tag">{copied ? 'Copied!' : 'Click to copy'}</span>
+          <span className="tag">{copied ? 'Link copied!' : 'Copy invite link'}</span>
         </button>
 
         <div className="waiting-players">

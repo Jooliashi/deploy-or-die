@@ -1169,6 +1169,18 @@ button {
   letter-spacing: 0.12em;
 }
 
+.landing-create-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.landing-copy-btn {
+  white-space: nowrap;
+  padding: 13px 16px;
+  font-size: 14px;
+}
+
 .landing-join-row {
   display: grid;
   grid-template-columns: 1fr auto;

@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createJazzRoom, DEMO_ROOM_CODE } from '@/lib/multiplayer/jazz-adapter';
 
 const DEFAULT_NAMES = [
@@ -17,10 +17,44 @@ function pickDefaultName(): string {
   return DEFAULT_NAMES[Math.floor(Math.random() * DEFAULT_NAMES.length)];
 }
 
+/** Extract a Jazz room ID from user input. Handles:
+ *  - Raw ID: "co_z123..." → "co_z123..."
+ *  - Full URL: "https://host/room/co_z123...?name=X" → "co_z123..."
+ *  - URL with ?join= param: "https://host/?join=co_z123..." → "co_z123..." */
+function extractRoomId(input: string): string {
+  const trimmed = input.trim();
+
+  // Try parsing as a URL.
+  try {
+    const url = new URL(trimmed);
+
+    // Check for ?join= param first.
+    const joinParam = url.searchParams.get('join');
+    if (joinParam) return joinParam;
+
+    // Check for /room/{id} path.
+    const match = url.pathname.match(/\/room\/([^/?]+)/);
+    if (match) return decodeURIComponent(match[1]);
+  } catch {
+    // Not a URL — treat as raw ID.
+  }
+
+  return trimmed;
+}
+
 export function Lobby() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [name, setName] = useState(pickDefaultName);
   const [joinCode, setJoinCode] = useState('');
+  const [createdRoomId, setCreatedRoomId] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  // Pre-fill join code from ?join= URL param.
+  useEffect(() => {
+    const join = searchParams.get('join');
+    if (join) setJoinCode(join);
+  }, [searchParams]);
 
   const safeName = name.trim() || pickDefaultName();
 
@@ -30,11 +64,24 @@ export function Lobby() {
   );
 
   const createRoom = useCallback(() => {
-    // Create the Jazz CoValue with a public Group, then navigate using the
-    // Jazz CoValue ID so the joiner can load the same shared room.
     const { id } = createJazzRoom({ roomCode: 'Multiplayer', isDemo: false });
+    setCreatedRoomId(id);
     router.push(`/room/${encodeURIComponent(id)}?name=${encodeURIComponent(safeName)}&host=1`);
   }, [safeName, router]);
+
+  const copyLink = useCallback(() => {
+    if (!createdRoomId) return;
+    const url = `${window.location.origin}/?join=${encodeURIComponent(createdRoomId)}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    });
+  }, [createdRoomId]);
+
+  const handleJoinInput = useCallback((value: string) => {
+    // Extract room ID if the user pastes a URL.
+    setJoinCode(extractRoomId(value));
+  }, []);
 
   const joinRoom = useCallback(() => {
     const code = joinCode.trim();
@@ -88,13 +135,24 @@ export function Lobby() {
             <span className="eyebrow">Multiplayer</span>
             <h2 className="landing-card-title">Play with Others</h2>
             <p className="landing-card-desc">
-              Create a room and share the code, or join an existing one.
+              Create a room and share the link, or join an existing one.
             </p>
           </div>
           <div className="landing-mp-actions">
-            <button className="button landing-card-btn" type="button" onClick={createRoom}>
-              Create New Room
-            </button>
+            <div className="landing-create-row">
+              <button className="button landing-card-btn" type="button" onClick={createRoom}>
+                Create New Room
+              </button>
+              {createdRoomId && (
+                <button
+                  className="button secondary landing-copy-btn"
+                  type="button"
+                  onClick={copyLink}
+                >
+                  {linkCopied ? 'Copied!' : 'Copy Link'}
+                </button>
+              )}
+            </div>
             <div className="landing-or">
               <span />
               <span className="landing-or-text">or join</span>
@@ -104,9 +162,9 @@ export function Lobby() {
               <input
                 className="input"
                 value={joinCode}
-                onChange={e => setJoinCode(e.target.value)}
+                onChange={e => handleJoinInput(e.target.value)}
                 onKeyDown={handleJoinKeyDown}
-                placeholder="Paste room ID"
+                placeholder="Paste room link or ID"
               />
               <button
                 className="button secondary"
@@ -134,7 +192,7 @@ export function Lobby() {
           <div className="panel-muted landing-info-card">
             <h3>Multiplayer</h3>
             <p>
-              Create a room and share the ID. Each player gets a role with
+              Create a room and share the link. Each player gets a role with
               different controls. Tasks are delegated -- communicate to survive
               the deploy.
             </p>
