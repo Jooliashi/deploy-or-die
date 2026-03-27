@@ -25,6 +25,8 @@ export interface PromptDefinition {
   timerSeconds: number;
   status: PromptStatus;
   createdAt: number;
+  /** The playerId of the player who sees this alert. */
+  assignedTo: string;
 }
 
 export interface DeployState {

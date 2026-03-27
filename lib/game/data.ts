@@ -172,9 +172,13 @@ export function pickRandomPrompts(count: number, forControls?: string[]): Prompt
       id: `prompt-${Date.now()}-${promptCounter}`,
       status: 'queued' as const,
       createdAt: Date.now(),
+      assignedTo: '', // set by the caller
     };
   });
 }
+
+// pickSpreadPrompts removed — the adapter now handles role-aware spawning
+// directly using promptPool and player data.
 
 export const STARTING_VALUATION = 1_000_000;
 
@@ -183,7 +187,7 @@ export const demoDeployState: DeployState = {
   valuation: STARTING_VALUATION,
   valuationHistory: [STARTING_VALUATION],
   timeRemainingSeconds: 300,
-  prompts: pickRandomPrompts(3),
+  prompts: [],
   bankrupt: false,
 };
 

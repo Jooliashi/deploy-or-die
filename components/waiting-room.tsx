@@ -1,9 +1,11 @@
 'use client';
 
+import { useCallback, useState } from 'react';
 import type { MultiplayerAdapter, SharedRoomState } from '@/lib/multiplayer/types';
 
 interface WaitingRoomProps {
   roomCode: string;
+  playerId: string;
   playerName: string;
   state: SharedRoomState;
   adapter: MultiplayerAdapter;
@@ -17,25 +19,54 @@ const roleGlyph: Record<string, string> = {
   infra: '▣',
 };
 
-export function WaitingRoom({ roomCode, playerName, state, adapter }: WaitingRoomProps) {
+export function WaitingRoom({ roomCode, playerId, playerName, state, adapter }: WaitingRoomProps) {
   const playerCount = state.players.length;
-  const canStart = playerCount >= MIN_PLAYERS;
+  const readyCount = state.players.filter(p => p.ready).length;
+  const meReady = state.players.find(p => p.id === playerId)?.ready ?? false;
+  const enoughPlayers = playerCount >= MIN_PLAYERS;
+  const allReady = enoughPlayers && readyCount === playerCount;
+
+  const [copied, setCopied] = useState(false);
+
+  const copyRoomId = useCallback(() => {
+    navigator.clipboard.writeText(roomCode).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [roomCode]);
+
+  const displayCode = roomCode.length > 16
+    ? `${roomCode.slice(0, 8)}...${roomCode.slice(-6)}`
+    : roomCode;
 
   return (
     <main className="panel room-shell waiting-shell">
       <div className="waiting-content">
         <div className="waiting-header">
           <span className="eyebrow">Waiting Room</span>
-          <h1 className="waiting-title">Room {roomCode}</h1>
+          <h1 className="waiting-title">Room</h1>
           <p className="waiting-sub">
-            Share this room code with teammates. The game starts when the host
-            hits launch.
+            Share the room ID below with teammates. The game starts
+            automatically once everyone is ready.
           </p>
         </div>
 
+        <button
+          className="panel-muted waiting-room-id"
+          type="button"
+          onClick={copyRoomId}
+          title="Click to copy room ID"
+        >
+          <span className="waiting-room-id-text">{displayCode}</span>
+          <span className="tag">{copied ? 'Copied!' : 'Click to copy'}</span>
+        </button>
+
         <div className="waiting-players">
           <div className="waiting-section-head">
-            <span className="stat-label">Players ({playerCount}/{MIN_PLAYERS} minimum)</span>
+            <span className="stat-label">
+              Players ({readyCount}/{playerCount} ready
+              {playerCount < MIN_PLAYERS ? ` — need ${MIN_PLAYERS} minimum` : ''})
+            </span>
           </div>
           <div className="player-list">
             {state.players.length === 0 ? (
@@ -44,15 +75,22 @@ export function WaitingRoom({ roomCode, playerName, state, adapter }: WaitingRoo
               </div>
             ) : (
               state.players.map(player => (
-                <div className="panel-muted player-slot" key={player.id}>
-                  <span className="role-glyph" aria-hidden="true">
-                    {roleGlyph[player.role] ?? '?'}
-                  </span>
+                <div
+                  className={`panel-muted player-slot${player.ready ? ' player-ready' : ''}`}
+                  key={player.id}
+                >
+                  <span
+                    className={`signal ${player.ready ? 'good' : 'idle'}`}
+                    aria-label={player.ready ? 'Ready' : 'Not ready'}
+                  />
                   <div className="player-info">
                     <span className="player-name">{player.name}</span>
                     <span className="tag">{player.role}</span>
                   </div>
-                  {player.name === playerName && <span className="tag you-tag">you</span>}
+                  {player.id === playerId && <span className="tag you-tag">you</span>}
+                  <span className={`tag ${player.ready ? 'ready-tag' : ''}`}>
+                    {player.ready ? 'Ready' : 'Waiting'}
+                  </span>
                 </div>
               ))
             )}
@@ -60,20 +98,26 @@ export function WaitingRoom({ roomCode, playerName, state, adapter }: WaitingRoo
         </div>
 
         <div className="waiting-actions">
-          {!canStart && (
+          {allReady ? (
+            <div className="callout panel-muted" style={{ borderColor: 'var(--success)' }}>
+              All players ready — launching...
+            </div>
+          ) : !enoughPlayers ? (
             <div className="callout panel-muted">
-              Need at least {MIN_PLAYERS} players to launch.
-              {MIN_PLAYERS - playerCount > 0 &&
-                ` Waiting for ${MIN_PLAYERS - playerCount} more...`}
+              Need at least {MIN_PLAYERS} players to start.
+              {` Waiting for ${MIN_PLAYERS - playerCount} more...`}
+            </div>
+          ) : (
+            <div className="callout panel-muted">
+              {readyCount}/{playerCount} players ready. Waiting for everyone...
             </div>
           )}
           <button
-            className={`button waiting-launch${canStart ? '' : ' disabled'}`}
-            disabled={!canStart}
-            onClick={() => adapter.startGame()}
+            className={`button waiting-launch${meReady ? ' waiting-ready-active' : ''}`}
+            onClick={() => adapter.toggleReady(playerId)}
             type="button"
           >
-            {canStart ? 'Launch Deploy' : `Waiting for players...`}
+            {meReady ? 'Not Ready' : 'Ready Up'}
           </button>
         </div>
       </div>

@@ -6,12 +6,20 @@ import { Sparkline } from '@/components/sparkline';
 import { WaitingRoom } from '@/components/waiting-room';
 import { roles } from '@/lib/game/data';
 import type { PromptDefinition } from '@/lib/game/types';
-import { createJazzRoom, DEMO_ROOM_CODE, JazzMultiplayerAdapter } from '@/lib/multiplayer/jazz-adapter';
+import {
+  createJazzRoom,
+  DEMO_ROOM_CODE,
+  JazzMultiplayerAdapter,
+  loadJazzRoom,
+  MAX_VISIBLE_ALERTS,
+} from '@/lib/multiplayer/jazz-adapter';
 import type { MultiplayerAdapter, SharedRoomState } from '@/lib/multiplayer/types';
 
 interface RoomClientProps {
   roomCode: string;
   playerName: string;
+  /** Whether this client created the room and should run the game tick loop. */
+  isHost: boolean;
 }
 
 const roleGlyph: Record<string, string> = {
@@ -58,7 +66,6 @@ function formatValuation(v: number): string {
   return `$${v}`;
 }
 
-/** Build the 6 control labels a player sees: their role's 4 + 2 from other roles. */
 function getPlayerControls(roleId: string): string[] {
   const own = roles.find(r => r.id === roleId);
   const others = roles.filter(r => r.id !== roleId);
@@ -66,29 +73,66 @@ function getPlayerControls(roleId: string): string[] {
   return [...(own?.controls ?? []), ...extra];
 }
 
-export function RoomClient({ roomCode, playerName }: RoomClientProps) {
+export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const adapterRef = useRef<JazzMultiplayerAdapter | null>(null);
   const isDemo = roomCode === DEMO_ROOM_CODE;
-  // In demo mode, the player is assigned the first role (frontend).
-  const demoRoleId = isDemo ? roles[0].id : undefined;
 
-  // Compute the 6 controls early so we can pass them to the adapter for prompt filtering.
+  // Stable unique player ID for this browser session.
+  const playerId = useRef(`p_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`).current;
+
+  const demoRoleId = isDemo ? roles[0].id : undefined;
   const playerControls = useMemo(
     () => (demoRoleId ? getPlayerControls(demoRoleId) : undefined),
     [demoRoleId],
   );
 
-  const adapter = useMemo<MultiplayerAdapter>(() => {
-    const room = createJazzRoom(roomCode, playerControls);
-    const jazzAdapter = new JazzMultiplayerAdapter(room, playerControls);
-    adapterRef.current = jazzAdapter;
-    return jazzAdapter;
-  }, [roomCode, playerControls]);
+  const [adapter, setAdapter] = useState<MultiplayerAdapter | null>(() => {
+    if (isDemo) {
+      const { room } = createJazzRoom({ roomCode, isDemo: true, playerControls });
+      const a = new JazzMultiplayerAdapter(room, {
+        playerControls,
+        isHost: true, // demo is always host
+      });
+      adapterRef.current = a;
+      return a;
+    }
+    return null;
+  });
 
-  const [state, setState] = useState<SharedRoomState>(adapter.getInitialState());
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [state, setState] = useState<SharedRoomState | null>(
+    adapter?.getInitialState() ?? null,
+  );
   const [selectedPrompt, setSelectedPrompt] = useState<PromptDefinition | null>(null);
   const [now, setNow] = useState(Date.now());
   const miniStageRef = useRef<HTMLElement>(null);
+
+  // Derive role and controls unconditionally (before any early returns) to
+  // satisfy the Rules of Hooks.
+  const currentRole = state?.players.find(p => p.id === playerId)?.role ?? 'frontend';
+  const role = roles.find(r => r.id === currentRole) ?? roles[0];
+  const controls = useMemo(
+    () => playerControls ?? getPlayerControls(currentRole),
+    [playerControls, currentRole],
+  );
+
+  // Async load for multiplayer rooms.
+  useEffect(() => {
+    if (isDemo || adapter) return;
+    let cancelled = false;
+    (async () => {
+      const room = await loadJazzRoom(roomCode);
+      if (cancelled) return;
+      if (!room) {
+        setLoadError('Room not found. The code may be invalid or the room may have expired.');
+        return;
+      }
+      const a = new JazzMultiplayerAdapter(room, { isHost });
+      adapterRef.current = a;
+      setAdapter(a);
+    })();
+    return () => { cancelled = true; };
+  }, [isDemo, roomCode, adapter]);
 
   // Tick every second for live countdowns.
   useEffect(() => {
@@ -96,15 +140,17 @@ export function RoomClient({ roomCode, playerName }: RoomClientProps) {
     return () => clearInterval(t);
   }, []);
 
+  // Join the room and subscribe to state.
   useEffect(() => {
-    adapter.addPlayer(playerName);
+    if (!adapter) return;
+    adapter.addPlayer(playerId, playerName);
     const unsubscribe = adapter.subscribe(setState);
     return () => {
       unsubscribe();
-      adapter.removePlayer(playerName);
+      adapter.removePlayer(playerId);
       adapterRef.current?.dispose();
     };
-  }, [adapter, playerName]);
+  }, [adapter, playerId, playerName]);
 
   // Close mini-game on Escape.
   const closeMiniGame = useCallback(() => setSelectedPrompt(null), []);
@@ -123,11 +169,39 @@ export function RoomClient({ roomCode, playerName }: RoomClientProps) {
     }
   }, [closeMiniGame]);
 
-  // Show waiting room until the game is started.
+  // ── Render gates (no hooks below this point) ──────────────
+
+  // Loading / error state.
+  if (!adapter || !state) {
+    return (
+      <main className="panel room-shell game-over-shell">
+        <div className="game-over-content">
+          {loadError ? (
+            <>
+              <span className="eyebrow">Error</span>
+              <h2>{loadError}</h2>
+              <div className="cta-row" style={{ justifyContent: 'center' }}>
+                <a className="button" href="/">Back to Lobby</a>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="eyebrow">Connecting</span>
+              <h2>Joining room...</h2>
+              <p className="game-over-sub">Syncing with Jazz Cloud</p>
+            </>
+          )}
+        </div>
+      </main>
+    );
+  }
+
+  // Waiting room.
   if (!state.gameStarted) {
     return (
       <WaitingRoom
         roomCode={roomCode}
+        playerId={playerId}
         playerName={playerName}
         state={state}
         adapter={adapter}
@@ -135,22 +209,24 @@ export function RoomClient({ roomCode, playerName }: RoomClientProps) {
     );
   }
 
-  const currentRole = state.players.find(p => p.name === playerName)?.role ?? 'frontend';
-  const role = roles.find(r => r.id === currentRole) ?? roles[0];
-
-  // Fixed 6 buttons for this player (stable across renders).
-  const controls = useMemo(() => playerControls ?? getPlayerControls(currentRole), [playerControls, currentRole]);
-
-  // Live prompts.
-  const livePrompts = state.deploy.prompts.filter(
+  // All live prompts in the shared room.
+  const allLivePrompts = state.deploy.prompts.filter(
     p => p.status === 'queued' || p.status === 'active',
   );
 
+  // Alerts: prompts assigned to THIS player (they read them out loud).
+  const myAlerts = allLivePrompts
+    .filter(p => p.assignedTo === playerId)
+    .slice(0, MAX_VISIBLE_ALERTS);
+
+  // Buttons respond to any live prompt whose actionLabel matches the player's
+  // controls, regardless of who the alert was assigned to.
+  const actionablePrompts = allLivePrompts;
   const { valuation, valuationHistory, bankrupt } = state.deploy;
   const prevVal = valuationHistory.length >= 2 ? valuationHistory[valuationHistory.length - 2] : valuation;
   const trending = valuation >= prevVal ? 'up' : 'down';
 
-  // Game over screen.
+  // Game over.
   if (bankrupt) {
     return (
       <main className="panel room-shell game-over-shell">
@@ -172,12 +248,16 @@ export function RoomClient({ roomCode, playerName }: RoomClientProps) {
     );
   }
 
+  const displayCode = roomCode.length > 12
+    ? `${roomCode.slice(0, 6)}...${roomCode.slice(-4)}`
+    : roomCode;
+
   return (
     <main className="panel room-shell station-shell">
       <section className="top-rail">
         <div className="pilot-card">
           <div className="pilot-row">
-            <span className="eyebrow">Room {roomCode}</span>
+            <span className="eyebrow">Room {displayCode}</span>
             <span className="role-glyph" aria-hidden="true">
               {roleGlyph[role.id]}
             </span>
@@ -189,7 +269,6 @@ export function RoomClient({ roomCode, playerName }: RoomClientProps) {
           </div>
         </div>
 
-        {/* Valuation card with sparkline */}
         <div className="panel-muted stat-card compact-stat valuation-card">
           <div className="status-head">
             <div className={`signal ${trending === 'up' ? 'good' : 'danger'}`} />
@@ -209,14 +288,13 @@ export function RoomClient({ roomCode, playerName }: RoomClientProps) {
           <div className="stat-value" style={{ fontSize: 22 }}>
             {Math.floor(state.deploy.timeRemainingSeconds / 60)}:{String(state.deploy.timeRemainingSeconds % 60).padStart(2, '0')}
           </div>
-          <div className="count-chip">{livePrompts.length} live tasks</div>
+          <div className="count-chip">{allLivePrompts.length} live tasks</div>
         </div>
       </section>
 
       <div className="station-body stack">
-        {/* Prompt banners */}
         <section className="prompt-overlay">
-          {livePrompts.map(prompt => {
+          {myAlerts.map(prompt => {
             const remaining = Math.max(
               0,
               prompt.timerSeconds - Math.floor((now - prompt.createdAt) / 1000),
@@ -252,7 +330,6 @@ export function RoomClient({ roomCode, playerName }: RoomClientProps) {
           })}
         </section>
 
-        {/* Fixed 6 control buttons */}
         <section className="station stack">
           <div className="console-head">
             <span className="eyebrow">Station Controls</span>
@@ -260,7 +337,7 @@ export function RoomClient({ roomCode, playerName }: RoomClientProps) {
           </div>
           <div className="command-board">
             {controls.map(control => {
-              const prompt = livePrompts.find(p => p.actionLabel === control);
+              const prompt = actionablePrompts.find(p => p.actionLabel === control);
               const isActive = selectedPrompt?.id === prompt?.id;
               const hasPrompt = !!prompt;
 
@@ -288,7 +365,7 @@ export function RoomClient({ roomCode, playerName }: RoomClientProps) {
                     disabled={!hasPrompt}
                     onClick={() => {
                       if (!prompt) return;
-                      adapter.claimPrompt(prompt.id, playerName);
+                      adapter.claimPrompt(prompt.id, playerId);
                       setSelectedPrompt(prompt);
                     }}
                     type="button"
@@ -301,7 +378,6 @@ export function RoomClient({ roomCode, playerName }: RoomClientProps) {
           </div>
         </section>
 
-        {/* Mini-game overlay with click-outside-to-close backdrop */}
         {selectedPrompt ? (
           // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
           <div className="mini-backdrop" onClick={handleBackdropClick}>

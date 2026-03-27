@@ -11,6 +11,8 @@ export const JazzPrompt = co.map({
   timerSeconds: z.number(),
   status: z.string(), // 'queued' | 'active' | 'resolved' | 'failed' | 'expired'
   createdAt: z.number(), // Date.now() timestamp when the prompt was spawned
+  /** The playerId of the player who sees this alert (reads it out loud). */
+  assignedTo: z.string(),
 });
 
 export const JazzPromptList = co.list(JazzPrompt);
@@ -32,6 +34,7 @@ export const JazzPlayer = co.map({
   playerId: z.string(),
   name: z.string(),
   role: z.string(), // RoleId
+  ready: z.boolean(),
 });
 
 export const JazzPlayerList = co.list(JazzPlayer);

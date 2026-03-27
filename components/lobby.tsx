@@ -3,15 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
-
-const DEMO_CODE = 'SHIP-42';
-
-function generateRoomCode(): string {
-  const words = ['SHIP', 'FLUX', 'CORE', 'HELM', 'NODE', 'PUSH', 'SYNC', 'BOLT'];
-  const word = words[Math.floor(Math.random() * words.length)];
-  const num = Math.floor(Math.random() * 900) + 100;
-  return `${word}-${num}`;
-}
+import { createJazzRoom, DEMO_ROOM_CODE } from '@/lib/multiplayer/jazz-adapter';
 
 const DEFAULT_NAMES = [
   'Kazuhira', 'Revolver', 'Meryl', 'Naomi', 'Otacon',
@@ -33,19 +25,21 @@ export function Lobby() {
   const safeName = name.trim() || pickDefaultName();
 
   const demoHref = useMemo(
-    () => `/room/${DEMO_CODE}?name=${encodeURIComponent(safeName)}`,
+    () => `/room/${DEMO_ROOM_CODE}?name=${encodeURIComponent(safeName)}`,
     [safeName],
   );
 
   const createRoom = useCallback(() => {
-    const code = generateRoomCode();
-    router.push(`/room/${code}?name=${encodeURIComponent(safeName)}`);
+    // Create the Jazz CoValue with a public Group, then navigate using the
+    // Jazz CoValue ID so the joiner can load the same shared room.
+    const { id } = createJazzRoom({ roomCode: 'Multiplayer', isDemo: false });
+    router.push(`/room/${encodeURIComponent(id)}?name=${encodeURIComponent(safeName)}&host=1`);
   }, [safeName, router]);
 
   const joinRoom = useCallback(() => {
     const code = joinCode.trim();
     if (!code) return;
-    router.push(`/room/${code}?name=${encodeURIComponent(safeName)}`);
+    router.push(`/room/${encodeURIComponent(code)}?name=${encodeURIComponent(safeName)}`);
   }, [joinCode, safeName, router]);
 
   const handleJoinKeyDown = useCallback(
@@ -57,7 +51,6 @@ export function Lobby() {
 
   return (
     <div className="landing-wrapper">
-      {/* ── Header + Name ────────────────────────────────── */}
       <div className="landing-top">
         <span className="eyebrow">Deploy or Die</span>
         <h1 className="landing-title">Spaceteam for<br />software engineers.</h1>
@@ -76,9 +69,7 @@ export function Lobby() {
         </div>
       </div>
 
-      {/* ── Action cards ─────────────────────────────────── */}
       <div className="landing-cards">
-        {/* Demo card */}
         <div className="panel landing-card">
           <div className="landing-card-head">
             <span className="eyebrow">Solo</span>
@@ -92,7 +83,6 @@ export function Lobby() {
           </Link>
         </div>
 
-        {/* Multiplayer card */}
         <div className="panel landing-card">
           <div className="landing-card-head">
             <span className="eyebrow">Multiplayer</span>
@@ -114,9 +104,9 @@ export function Lobby() {
               <input
                 className="input"
                 value={joinCode}
-                onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                onChange={e => setJoinCode(e.target.value)}
                 onKeyDown={handleJoinKeyDown}
-                placeholder="Enter room code"
+                placeholder="Paste room ID"
               />
               <button
                 className="button secondary"
@@ -131,7 +121,6 @@ export function Lobby() {
         </div>
       </div>
 
-      {/* ── Info ─────────────────────────────────────────── */}
       <div className="landing-bottom">
         <div className="landing-info-grid">
           <div className="panel-muted landing-info-card">
@@ -145,7 +134,7 @@ export function Lobby() {
           <div className="panel-muted landing-info-card">
             <h3>Multiplayer</h3>
             <p>
-              Create a room and share the code. Each player gets a role with
+              Create a room and share the ID. Each player gets a role with
               different controls. Tasks are delegated -- communicate to survive
               the deploy.
             </p>

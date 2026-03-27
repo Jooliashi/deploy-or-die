@@ -2,7 +2,7 @@ import { RoomClient } from '@/components/room-client';
 
 interface RoomPageProps {
   params: Promise<{ roomCode: string }>;
-  searchParams: Promise<{ name?: string }>;
+  searchParams: Promise<{ name?: string; host?: string }>;
 }
 
 export default async function RoomPage({
@@ -10,8 +10,14 @@ export default async function RoomPage({
   searchParams,
 }: RoomPageProps) {
   const { roomCode } = await params;
-  const { name } = await searchParams;
+  const { name, host } = await searchParams;
 
-  return <RoomClient roomCode={roomCode} playerName={name ?? 'Alex'} />;
+  return (
+    <RoomClient
+      roomCode={roomCode}
+      playerName={name ?? 'Alex'}
+      isHost={host === '1'}
+    />
+  );
 }
 

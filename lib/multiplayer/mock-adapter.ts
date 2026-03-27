@@ -4,9 +4,9 @@ import type { MultiplayerAdapter, SharedRoomState } from '@/lib/multiplayer/type
 const initialState: SharedRoomState = {
   deploy: demoDeployState,
   players: [
-    { id: 'p1', name: 'Alex', role: roles[0].id },
-    { id: 'p2', name: 'Jules', role: roles[1].id },
-    { id: 'p3', name: 'Mina', role: roles[2].id },
+    { id: 'p1', name: 'Alex', role: roles[0].id, ready: false },
+    { id: 'p2', name: 'Jules', role: roles[1].id, ready: false },
+    { id: 'p3', name: 'Mina', role: roles[2].id, ready: false },
   ],
   gameStarted: false,
 };
@@ -20,24 +20,34 @@ export class MockMultiplayerAdapter implements MultiplayerAdapter {
     return this.#state;
   }
 
-  addPlayer(name: string) {
-    const exists = this.#state.players.some(p => p.name === name);
+  addPlayer(playerId: string, name: string) {
+    const exists = this.#state.players.some(p => p.id === playerId);
     if (exists) return;
     const role = roles[this.#state.players.length % roles.length].id;
     this.#state = {
       ...this.#state,
       players: [
         ...this.#state.players,
-        { id: `p${Date.now()}`, name, role },
+        { id: playerId, name, role, ready: false },
       ],
     };
     this.#emit();
   }
 
-  removePlayer(name: string) {
+  removePlayer(playerId: string) {
     this.#state = {
       ...this.#state,
-      players: this.#state.players.filter(p => p.name !== name),
+      players: this.#state.players.filter(p => p.id !== playerId),
+    };
+    this.#emit();
+  }
+
+  toggleReady(playerId: string) {
+    this.#state = {
+      ...this.#state,
+      players: this.#state.players.map(p =>
+        p.id === playerId ? { ...p, ready: !p.ready } : p,
+      ),
     };
     this.#emit();
   }

@@ -4,6 +4,7 @@ export interface PlayerPresence {
   id: string;
   name: string;
   role: RoleId;
+  ready: boolean;
 }
 
 export interface SharedRoomState {
@@ -14,8 +15,9 @@ export interface SharedRoomState {
 
 export interface MultiplayerAdapter {
   getInitialState(): SharedRoomState;
-  addPlayer(name: string): void;
-  removePlayer(name: string): void;
+  addPlayer(playerId: string, name: string): void;
+  removePlayer(playerId: string): void;
+  toggleReady(playerId: string): void;
   startGame(): void;
   claimPrompt(promptId: string, playerId: string): void;
   resolvePrompt(promptId: string): void;
