@@ -16,7 +16,8 @@ const MIN_PLAYERS = 2;
 const roleGlyph: Record<string, string> = {
   frontend: '◫',
   backend: '◎',
-  infra: '▣',
+  database: '◉',
+  success: '✦',
 };
 
 export function WaitingRoom({ roomCode, playerId, playerName, state, adapter }: WaitingRoomProps) {

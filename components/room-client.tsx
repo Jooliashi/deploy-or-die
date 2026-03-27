@@ -25,7 +25,8 @@ interface RoomClientProps {
 const roleGlyph: Record<string, string> = {
   frontend: '◫',
   backend: '◎',
-  infra: '▣',
+  database: '◉',
+  success: '✦',
 };
 
 const promptGlyph: Record<string, string> = {
@@ -35,29 +36,308 @@ const promptGlyph: Record<string, string> = {
   failed: 'x',
 };
 
+type ControlSkin =
+  | 'browser'
+  | 'toggle'
+  | 'flag'
+  | 'chart'
+  | 'terminal'
+  | 'switch'
+  | 'globe'
+  | 'cache'
+  | 'database'
+  | 'kv'
+  | 'blob'
+  | 'queue'
+  | 'social'
+  | 'reply'
+  | 'vendor'
+  | 'broadcast';
+
 function compactLabel(control: string) {
   return control
-    .replace('Client ', '')
-    .replace('Deploy ', '')
-    .replace('Restore ', '')
-    .replace('Repair ', '')
     .replace('Rebuild ', '')
-    .replace('Restart ', '')
     .replace('Replay ', '')
-    .replace('Reopen ', '')
     .replace('Shift ', '')
     .replace('Patch ', '')
-    .replace('Throttle ', '')
-    .replace('Edge ', '')
-    .replace('Region ', '')
-    .replace('Worker ', 'WRK ')
-    .replace('Route ', 'RTE ')
-    .replace('Traffic ', 'TRF ')
-    .replace('Labels', 'LBL')
-    .replace('Bundle', 'BNDL')
-    .replace('Graph', 'MAP')
-    .replace('Weight', 'WT')
-    .replace('Pipeline', 'PIPE');
+    .replace('Reconnect ', '')
+    .replace('Override ', '')
+    .replace('Sync ', '')
+    .replace('Purge ', '')
+    .replace('Restore ', '')
+    .replace('Promote ', '')
+    .replace('Backfill ', '')
+    .replace('Post ', '')
+    .replace('Reply to ', '')
+    .replace('Ping ', '')
+    .replace('Send ', '')
+    .replace('Challenge ', '')
+    .replace('Drain ', '')
+    .replace('Preview Deployment', 'PREVIEW')
+    .replace('Toolbar Comments', 'COMMENTS')
+    .replace('Flags Explorer', 'FLAGS')
+    .replace('Web Analytics', 'ANALYTICS')
+    .replace('Edge Config', 'CONFIG')
+    .replace('Cron Run', 'CRON')
+    .replace('Function Region', 'REGION')
+    .replace('Runtime Cache', 'CACHE')
+    .replace('Postgres Replica', 'POSTGRES')
+    .replace('KV Drift', 'KV')
+    .replace('Blob Asset', 'BLOB')
+    .replace('Session Store', 'SESSION')
+    .replace('Launch Thread', 'LAUNCH')
+    .replace('Enterprise Ticket', 'TICKET')
+    .replace('Integration Vendor', 'VENDOR')
+    .replace('How-To Blast', 'HOWTO');
+}
+
+function getControlSkin(control: string): ControlSkin {
+  switch (control) {
+    case 'Rebuild Preview Deployment':
+      return 'browser';
+    case 'Patch Toolbar Comments':
+      return 'toggle';
+    case 'Override Flags Explorer':
+      return 'flag';
+    case 'Reconnect Web Analytics':
+      return 'chart';
+    case 'Sync Edge Config':
+      return 'terminal';
+    case 'Replay Cron Run':
+      return 'switch';
+    case 'Shift Function Region':
+      return 'globe';
+    case 'Purge Runtime Cache':
+      return 'cache';
+    case 'Promote Postgres Replica':
+      return 'database';
+    case 'Purge KV Drift':
+      return 'kv';
+    case 'Restore Blob Asset':
+      return 'blob';
+    case 'Backfill Session Store':
+      return 'queue';
+    case 'Post Launch Thread':
+      return 'social';
+    case 'Reply to Enterprise Ticket':
+      return 'reply';
+    case 'Ping Integration Vendor':
+      return 'vendor';
+    default:
+      return 'broadcast';
+  }
+}
+
+function getControlCodes(skin: ControlSkin): [string, string] {
+  switch (skin) {
+    case 'browser':
+      return ['PV', '01'];
+    case 'toggle':
+      return ['CM', '02'];
+    case 'flag':
+      return ['FG', '03'];
+    case 'chart':
+      return ['AN', '04'];
+    case 'terminal':
+      return ['EC', '05'];
+    case 'switch':
+      return ['CR', '06'];
+    case 'globe':
+      return ['RG', '07'];
+    case 'cache':
+      return ['RC', '08'];
+    case 'database':
+      return ['PG', '09'];
+    case 'kv':
+      return ['KV', '10'];
+    case 'blob':
+      return ['BL', '11'];
+    case 'queue':
+      return ['SS', '12'];
+    case 'social':
+      return ['TW', '13'];
+    case 'reply':
+      return ['CS', '14'];
+    case 'vendor':
+      return ['VN', '15'];
+    default:
+      return ['HT', '16'];
+  }
+}
+
+function ControlFace({ skin, label, hasPrompt }: { skin: ControlSkin; label: string; hasPrompt: boolean }) {
+  const [codeA, codeB] = getControlCodes(skin);
+
+  switch (skin) {
+    case 'browser':
+      return (
+        <div className="control-face control-face-browser">
+          <div className="browser-top">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="browser-window" />
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'toggle':
+      return (
+        <div className="control-face control-face-toggle">
+          <div className={`toggle-pill${hasPrompt ? ' on' : ''}`}>
+            <span />
+          </div>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'flag':
+      return (
+        <div className="control-face control-face-flag">
+          <div className="flag-columns">
+            <span />
+            <span className={hasPrompt ? 'active' : ''} />
+            <span />
+          </div>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'chart':
+      return (
+        <div className="control-face control-face-chart">
+          <div className="chart-bars">
+            <span />
+            <span />
+            <span className={hasPrompt ? 'active' : ''} />
+          </div>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'terminal':
+      return (
+        <div className="control-face control-face-terminal">
+          <div className="terminal-screen">&gt; sync env</div>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'switch':
+      return (
+        <div className="control-face control-face-switch">
+          <div className={`rocker${hasPrompt ? ' active' : ''}`} />
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'globe':
+      return (
+        <div className="control-face control-face-globe">
+          <div className={`globe-icon${hasPrompt ? ' active' : ''}`}>
+            <span className="globe-ring" />
+            <span className="globe-lat" />
+            <span className="globe-lat bottom" />
+            <span className="globe-meridian left" />
+            <span className="globe-meridian right" />
+          </div>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'cache':
+      return (
+        <div className="control-face control-face-cache">
+          <div className="dial-ring">
+            <div className="dial-core" />
+          </div>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'database':
+      return (
+        <div className="control-face control-face-database">
+          <div className="db-stack">
+            <span />
+            <span />
+            <span className={hasPrompt ? 'active' : ''} />
+          </div>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'kv':
+      return (
+        <div className="control-face control-face-kv">
+          <div className="kv-grid">
+            <span className={hasPrompt ? 'active' : ''} />
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'blob':
+      return (
+        <div className="control-face control-face-blob">
+          <div className="blob-shape" />
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'queue':
+      return (
+        <div className="control-face control-face-queue">
+          <div className="queue-lines">
+            <span />
+            <span className={hasPrompt ? 'active' : ''} />
+            <span />
+          </div>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'social':
+      return (
+        <div className="control-face control-face-social">
+          <div className="social-burst">@</div>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'reply':
+      return (
+        <div className="control-face control-face-reply">
+          <div className="reply-bubble" />
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'vendor':
+      return (
+        <div className="control-face control-face-vendor">
+          <div className="vendor-nodes">
+            <span />
+            <span className={hasPrompt ? 'active' : ''} />
+            <span />
+          </div>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    default:
+      return (
+        <div className="control-face control-face-broadcast">
+          <div className="broadcast-cone" />
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+  }
 }
 
 function formatValuation(v: number): string {
@@ -253,12 +533,12 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     : roomCode;
 
   return (
-    <main className="panel room-shell station-shell">
+    <main className={`panel room-shell station-shell role-theme role-${role.id}`}>
       <section className="top-rail">
-        <div className="pilot-card">
+        <div className={`pilot-card pilot-card-${role.id}`}>
           <div className="pilot-row">
             <span className="eyebrow">Room {displayCode}</span>
-            <span className="role-glyph" aria-hidden="true">
+            <span className={`role-glyph role-glyph-${role.id}`} aria-hidden="true">
               {roleGlyph[role.id]}
             </span>
           </div>
@@ -330,7 +610,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
           })}
         </section>
 
-        <section className="station stack">
+        <section className={`station stack station-${role.id}`}>
           <div className="console-head">
             <span className="eyebrow">Station Controls</span>
             <h2 style={{ marginTop: 8 }}>{role.name} Console</h2>
@@ -340,28 +620,19 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
               const prompt = actionablePrompts.find(p => p.actionLabel === control);
               const isActive = selectedPrompt?.id === prompt?.id;
               const hasPrompt = !!prompt;
+              const skin = getControlSkin(control);
 
               return (
                 <div
                   className={[
                     'panel-muted button-card',
+                    `button-card-${role.id}`,
                     isActive ? 'active' : '',
                   ].filter(Boolean).join(' ')}
                   key={control}
                 >
-                  <div className="button-deck">
-                    <div className="button-panel">
-                      <div className={`signal ${hasPrompt ? 'warn' : 'idle'}`} />
-                      <div className="button-caption">{compactLabel(control)}</div>
-                    </div>
-                    <div className="toggle-row" aria-hidden="true">
-                      <span />
-                      <span className={hasPrompt ? 'active' : ''} />
-                      <span />
-                    </div>
-                  </div>
                   <button
-                    className={`control-button${hasPrompt ? ' ready' : ''}`}
+                    className={`control-button control-button-${role.id} control-skin-${skin}${hasPrompt ? ' ready' : ''}`}
                     disabled={!hasPrompt}
                     onClick={() => {
                       if (!prompt) return;
@@ -370,7 +641,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
                     }}
                     type="button"
                   >
-                    <span className="control-core" />
+                    <ControlFace skin={skin} label={compactLabel(control)} hasPrompt={hasPrompt} />
                   </button>
                 </div>
               );
@@ -381,7 +652,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
         {selectedPrompt ? (
           // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
           <div className="mini-backdrop" onClick={handleBackdropClick}>
-            <section className="mini-stage" ref={miniStageRef}>
+            <section className={`mini-stage mini-stage-${role.id}`} ref={miniStageRef}>
               <div>
                 <span className="eyebrow">Mini-Game</span>
                 <h3 style={{ marginTop: 8 }}>{selectedPrompt.actionLabel}</h3>

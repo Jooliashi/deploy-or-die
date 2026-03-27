@@ -16,18 +16,18 @@ export function MiniGamePanel({
   if (miniGameId === 'visual-patch') {
     return (
       <div className="mini-shell">
-        <div className="callout panel-muted">match target tile</div>
+        <div className="callout panel-muted">repair preview surface</div>
         <div className="mini-grid">
-          <div className="mini-tile">Header</div>
-          <div className="mini-tile target">CTA</div>
-          <div className="mini-tile">Card</div>
+          <div className="mini-tile">toolbar</div>
+          <div className="mini-tile target">flags</div>
+          <div className="mini-tile">preview</div>
         </div>
         <div className="cta-row">
           <button className="button" onClick={onResolve} type="button">
-            Patch Visual
+            Ship Fix
           </button>
           <button className="button secondary" onClick={onFail} type="button">
-            Ship Broken UI
+            Break Preview
           </button>
         </div>
       </div>
@@ -37,18 +37,39 @@ export function MiniGamePanel({
   if (miniGameId === 'route-repair') {
     return (
       <div className="mini-shell">
-        <div className="callout panel-muted">restore route chain</div>
+        <div className="callout panel-muted">stabilize config path</div>
         <div className="mini-grid">
-          <div className="mini-tile target">API</div>
-          <div className="mini-tile">Worker</div>
-          <div className="mini-tile">Auth</div>
+          <div className="mini-tile target">config</div>
+          <div className="mini-tile">cron</div>
+          <div className="mini-tile">cache</div>
         </div>
         <div className="cta-row">
           <button className="button" onClick={onResolve} type="button">
-            Restore Routing
+            Sync Backend
           </button>
           <button className="button secondary" onClick={onFail} type="button">
-            Drop Requests
+            Stall Runtime
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (miniGameId === 'message-triage') {
+    return (
+      <div className="mini-shell">
+        <div className="callout panel-muted">ship the right response</div>
+        <div className="mini-grid">
+          <div className="mini-tile target">reply</div>
+          <div className="mini-tile">vendor</div>
+          <div className="mini-tile">thread</div>
+        </div>
+        <div className="cta-row">
+          <button className="button" onClick={onResolve} type="button">
+            Send Update
+          </button>
+          <button className="button secondary" onClick={onFail} type="button">
+            Misfire Comms
           </button>
         </div>
       </div>
@@ -57,18 +78,18 @@ export function MiniGamePanel({
 
   return (
     <div className="mini-shell">
-      <div className="callout panel-muted">rebalance live regions</div>
+      <div className="callout panel-muted">stabilize production edge</div>
       <div className="mini-grid">
-        <div className="mini-tile">iad1</div>
-        <div className="mini-tile target">sfo1</div>
-        <div className="mini-tile">fra1</div>
+        <div className="mini-tile">waf</div>
+        <div className="mini-tile target">rollout</div>
+        <div className="mini-tile">botid</div>
       </div>
       <div className="cta-row">
         <button className="button" onClick={onResolve} type="button">
-          Stabilize Regions
+          Restore Edge
         </button>
         <button className="button secondary" onClick={onFail} type="button">
-          Overload Canary
+          Melt Prod
         </button>
       </div>
     </div>

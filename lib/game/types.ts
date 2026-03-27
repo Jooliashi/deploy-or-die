@@ -1,9 +1,10 @@
-export type RoleId = 'frontend' | 'backend' | 'infra';
+export type RoleId = 'frontend' | 'backend' | 'database' | 'success';
 
 export type MiniGameId =
   | 'visual-patch'
   | 'route-repair'
-  | 'traffic-balance';
+  | 'traffic-balance'
+  | 'message-triage';
 
 export type PromptStatus = 'queued' | 'active' | 'resolved' | 'failed' | 'expired';
 
@@ -40,4 +41,3 @@ export interface DeployState {
   /** True once valuation hits 0 — game over. */
   bankrupt: boolean;
 }
-
