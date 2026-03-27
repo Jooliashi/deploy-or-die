@@ -1,9 +1,12 @@
+import { Suspense } from 'react';
 import { Lobby } from '@/components/lobby';
 
 export default function HomePage() {
   return (
     <main className="shell">
-      <Lobby />
+      <Suspense>
+        <Lobby />
+      </Suspense>
     </main>
   );
 }
