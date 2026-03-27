@@ -29,9 +29,13 @@ const availableRoles: RoleId[] = roles.map(r => r.id);
 
 let promptCounter = 0;
 
-/** Max alerts assigned to each individual player at once. Change to 2 or 3
+/** Max alerts shown to each individual player at once. Change to 2 or 3
  *  if you want players to juggle multiple tasks simultaneously. */
 export const MAX_VISIBLE_ALERTS = 1;
+
+/** How many queued prompts to keep in the backlog per player so there's
+ *  always a next task ready the instant the current one completes. */
+const QUEUE_DEPTH = 5;
 
 function coRoomToState(room: LoadedJazzRoom): SharedRoomState {
   const prompts: PromptDefinition[] = room.deploy.prompts.map(p => ({
@@ -195,6 +199,8 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     for (let i = 0; i < this.#room.deploy.prompts.length; i++) {
       const p = this.#room.deploy.prompts[i];
       if (p.status !== 'queued' && p.status !== 'active') continue;
+      // Only expire prompts that have been activated (createdAt > 0).
+      if (p.createdAt === 0) continue;
       const elapsed = (now - p.createdAt) / 1000;
       if (elapsed >= p.timerSeconds) {
         p.$jazz.set('status', 'expired');
@@ -207,10 +213,10 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
       this.#adjustValuation(valuationDelta);
     }
 
-    const liveCount = this.#room.deploy.prompts.filter(
-      p => p.status === 'queued' || p.status === 'active',
+    const startedCount = this.#room.deploy.prompts.filter(
+      p => (p.status === 'queued' || p.status === 'active') && p.createdAt > 0,
     ).length;
-    if (liveCount > 0 && valuationDelta === 0) {
+    if (startedCount > 0 && valuationDelta === 0) {
       const drift = (Math.random() - 0.6) * 8_000;
       this.#adjustValuation(drift);
     }
@@ -222,58 +228,39 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
       );
     }
 
-    // Always check if new prompts need spawning (covers both expirations and
-    // prompts resolved/failed by other clients).
+    // Activate next prompts for any player that has no visible task.
+    this.#activateNextPrompts();
+    // Top up the queue.
     this.#spawnIfNeeded();
   }
 
-  /** Ensure every player always has at least MAX_VISIBLE_ALERTS live prompts
-   *  assigned to them. Spawns one prompt per player that's missing one. */
+  /** Keep a deep queue per player. Prompts in the queue have createdAt = 0
+   *  (not yet started). The tick activates the next one when a player has no
+   *  active prompt. This means the next task appears instantly. */
   #spawnIfNeeded(): void {
-    const live = this.#room.deploy.prompts.filter(
-      p => p.status === 'queued' || p.status === 'active',
-    );
-
     const players = this.#room.players;
     if (players.length === 0) return;
 
     const isDemo = !!this.#playerControls;
     const rolesInGame = [...new Set(players.map(p => p.role as RoleId))];
 
-    // For each player, check if they have enough live alerts.
     for (let pi = 0; pi < players.length; pi++) {
       const player = players[pi];
-      const theirAlerts = live.filter(p => p.assignedTo === player.playerId).length;
-      if (theirAlerts >= MAX_VISIBLE_ALERTS) continue;
 
-      const deficit = MAX_VISIBLE_ALERTS - theirAlerts;
-      for (let d = 0; d < deficit; d++) {
-        if (isDemo) {
-          // Demo: spawn for the player's own controls.
-          const newPrompts = pickRandomPrompts(1, this.#playerControls);
-          if (newPrompts.length === 0) continue;
-          const p = newPrompts[0];
-          this.#room.deploy.prompts.$jazz.push({
-            promptId: p.id, label: p.label, hint: p.hint,
-            ownerRole: p.ownerRole, actionLabel: p.actionLabel,
-            miniGameId: p.miniGameId, timerSeconds: p.timerSeconds,
-            status: p.status, createdAt: p.createdAt,
-            assignedTo: player.playerId,
-          });
-          continue;
-        }
+      // Pipeline = all queued/active prompts for this player.
+      const pipeline = this.#room.deploy.prompts.filter(
+        p => p.assignedTo === player.playerId &&
+          (p.status === 'queued' || p.status === 'active'),
+      );
+      const needed = QUEUE_DEPTH - pipeline.length;
+      if (needed <= 0) continue;
 
-        // Multiplayer: pick a role that this player does NOT have, so they
-        // can't solve it themselves and must communicate.
-        const otherRoles = rolesInGame.filter(r => r !== player.role);
-        const targetRole = otherRoles.length > 0
-          ? otherRoles[Math.floor(Math.random() * otherRoles.length)]
-          : rolesInGame[Math.floor(Math.random() * rolesInGame.length)];
+      for (let d = 0; d < needed; d++) {
+        const template = this.#pickTemplate(isDemo, player.role as RoleId, rolesInGame);
+        if (!template) continue;
 
-        const rolePool = promptPool.filter(t => t.ownerRole === targetRole);
-        if (rolePool.length === 0) continue;
-        const template = rolePool[Math.floor(Math.random() * rolePool.length)];
-
+        // createdAt = 0 means "waiting in queue, not started yet".
+        // The tick will set createdAt = Date.now() when it's this prompt's turn.
         promptCounter += 1;
         this.#room.deploy.prompts.$jazz.push({
           promptId: `prompt-${Date.now()}-${promptCounter}`,
@@ -284,9 +271,60 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
           miniGameId: template.miniGameId,
           timerSeconds: template.timerSeconds,
           status: 'queued',
-          createdAt: Date.now(),
+          createdAt: 0,
           assignedTo: player.playerId,
         });
+      }
+    }
+  }
+
+  /** Pick a prompt template. In demo: from player controls. In multiplayer:
+   *  from a role the player does NOT have. */
+  #pickTemplate(isDemo: boolean, playerRole: RoleId, rolesInGame: RoleId[]) {
+    if (isDemo) {
+      const prompts = pickRandomPrompts(1, this.#playerControls);
+      return prompts.length > 0
+        ? { label: prompts[0].label, hint: prompts[0].hint, ownerRole: prompts[0].ownerRole, actionLabel: prompts[0].actionLabel, miniGameId: prompts[0].miniGameId, timerSeconds: prompts[0].timerSeconds }
+        : null;
+    }
+    const otherRoles = rolesInGame.filter(r => r !== playerRole);
+    const targetRole = otherRoles.length > 0
+      ? otherRoles[Math.floor(Math.random() * otherRoles.length)]
+      : rolesInGame[Math.floor(Math.random() * rolesInGame.length)];
+    const rp = promptPool.filter(t => t.ownerRole === targetRole);
+    if (rp.length === 0) return null;
+    return rp[Math.floor(Math.random() * rp.length)];
+  }
+
+  /** For each player, if they have no "started" prompt (createdAt > 0 and
+   *  still queued/active), activate the next one from their queue. */
+  #activateNextPrompts(): void {
+    const now = Date.now();
+    const players = this.#room.players;
+
+    for (let pi = 0; pi < players.length; pi++) {
+      const player = players[pi];
+
+      // Count how many started (createdAt > 0) and still live prompts they have.
+      const started = this.#room.deploy.prompts.filter(
+        p => p.assignedTo === player.playerId &&
+          (p.status === 'queued' || p.status === 'active') &&
+          p.createdAt > 0,
+      ).length;
+
+      if (started >= MAX_VISIBLE_ALERTS) continue;
+
+      // Find the next queued prompt with createdAt = 0 and activate it.
+      for (let i = 0; i < this.#room.deploy.prompts.length; i++) {
+        const p = this.#room.deploy.prompts[i];
+        if (
+          p.assignedTo === player.playerId &&
+          p.status === 'queued' &&
+          p.createdAt === 0
+        ) {
+          p.$jazz.set('createdAt', now);
+          break;
+        }
       }
     }
   }

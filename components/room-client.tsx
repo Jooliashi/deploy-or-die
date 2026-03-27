@@ -209,19 +209,23 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     );
   }
 
-  // All live prompts in the shared room.
-  const allLivePrompts = state.deploy.prompts.filter(
-    p => p.status === 'queued' || p.status === 'active',
+  // "Started" prompts have createdAt > 0 (activated by the host).
+  // Prompts with createdAt = 0 are waiting in the queue.
+  const startedPrompts = state.deploy.prompts.filter(
+    p => (p.status === 'queued' || p.status === 'active') && p.createdAt > 0,
   );
 
-  // Alerts: prompts assigned to THIS player (they read them out loud).
-  const myAlerts = allLivePrompts
+  // Alerts: started prompts assigned to THIS player.
+  const myAlerts = startedPrompts
     .filter(p => p.assignedTo === playerId)
     .slice(0, MAX_VISIBLE_ALERTS);
 
-  // Buttons respond to any live prompt whose actionLabel matches the player's
-  // controls, regardless of who the alert was assigned to.
-  const actionablePrompts = allLivePrompts;
+  // Buttons respond to any started prompt whose actionLabel matches the
+  // player's controls, regardless of who the alert was assigned to.
+  const actionablePrompts = startedPrompts;
+
+  // Count only started prompts for the display.
+  const allLiveCount = startedPrompts.length;
   const { valuation, valuationHistory, bankrupt } = state.deploy;
   const prevVal = valuationHistory.length >= 2 ? valuationHistory[valuationHistory.length - 2] : valuation;
   const trending = valuation >= prevVal ? 'up' : 'down';
@@ -288,46 +292,58 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
           <div className="stat-value" style={{ fontSize: 22 }}>
             {Math.floor(state.deploy.timeRemainingSeconds / 60)}:{String(state.deploy.timeRemainingSeconds % 60).padStart(2, '0')}
           </div>
-          <div className="count-chip">{allLivePrompts.length} live tasks</div>
+          <div className="count-chip">{allLiveCount} live tasks</div>
         </div>
       </section>
 
       <div className="station-body stack">
         <section className="prompt-overlay">
-          {myAlerts.map(prompt => {
-            const remaining = Math.max(
-              0,
-              prompt.timerSeconds - Math.floor((now - prompt.createdAt) / 1000),
-            );
-            const urgent = remaining <= 5;
+          {myAlerts.length > 0 ? (
+            myAlerts.map(prompt => {
+              const remaining = Math.max(
+                0,
+                prompt.timerSeconds - Math.floor((now - prompt.createdAt) / 1000),
+              );
+              const urgent = remaining <= 5;
 
-            return (
-              <div
-                className={[
-                  'prompt-banner',
-                  selectedPrompt?.id === prompt.id ? 'active' : '',
-                  urgent ? 'urgent' : '',
-                ].filter(Boolean).join(' ')}
-                key={prompt.id}
-              >
-                <div className="prompt-topline">
-                  <div className={`prompt-icon status-${prompt.status}`}>
-                    {promptGlyph[prompt.status]}
+              return (
+                <div
+                  className={[
+                    'prompt-banner',
+                    selectedPrompt?.id === prompt.id ? 'active' : '',
+                    urgent ? 'urgent' : '',
+                  ].filter(Boolean).join(' ')}
+                  key={prompt.id}
+                >
+                  <div className="prompt-topline">
+                    <div className={`prompt-icon status-${prompt.status}`}>
+                      {promptGlyph[prompt.status]}
+                    </div>
+                    <div className="prompt-meta">
+                      <span>{prompt.actionLabel}</span>
+                      <span className={`prompt-timer${urgent ? ' timer-urgent' : ''}`}>
+                        {remaining}s
+                      </span>
+                    </div>
                   </div>
-                  <div className="prompt-meta">
-                    <span>{prompt.actionLabel}</span>
-                    <span className={`prompt-timer${urgent ? ' timer-urgent' : ''}`}>
-                      {remaining}s
-                    </span>
+                  <h3 className="prompt-title">{prompt.label}</h3>
+                  <div className="prompt-timer-bar">
+                    <span style={{ width: `${(remaining / prompt.timerSeconds) * 100}%` }} />
                   </div>
                 </div>
-                <h3 className="prompt-title">{prompt.label}</h3>
-                <div className="prompt-timer-bar">
-                  <span style={{ width: `${(remaining / prompt.timerSeconds) * 100}%` }} />
+              );
+            })
+          ) : (
+            <div className="prompt-banner prompt-empty">
+              <div className="prompt-topline">
+                <div className="prompt-icon status-queued">...</div>
+                <div className="prompt-meta">
+                  <span>Standby</span>
                 </div>
               </div>
-            );
-          })}
+              <h3 className="prompt-title">Waiting for next task...</h3>
+            </div>
+          )}
         </section>
 
         <section className="station stack">

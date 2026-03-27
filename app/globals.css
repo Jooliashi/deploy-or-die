@@ -302,11 +302,22 @@ button {
 
 .prompt-banner {
   padding: 12px 14px;
+  min-height: 110px;
+  box-sizing: border-box;
   background:
     linear-gradient(180deg, rgba(145, 22, 22, 0.95), rgba(72, 10, 10, 0.95));
   border: 1px solid rgba(255, 124, 124, 0.34);
   border-radius: 16px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+}
+
+.prompt-banner.prompt-empty {
+  background:
+    linear-gradient(180deg, rgba(40, 40, 45, 0.6), rgba(25, 25, 30, 0.6));
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  opacity: 0.5;
+  animation: none;
 }
 
 .prompt-banner.active {
