@@ -7,7 +7,17 @@ interface SparklineProps {
 }
 
 export function Sparkline({ data, width = 200, height = 48 }: SparklineProps) {
-  if (data.length < 2) return null;
+  if (data.length < 2) {
+    return (
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        width="100%"
+        height={height}
+        className="sparkline"
+        preserveAspectRatio="none"
+      />
+    );
+  }
 
   const min = Math.min(...data) * 0.9;
   const max = Math.max(...data) * 1.1 || 1;

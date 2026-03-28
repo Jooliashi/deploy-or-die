@@ -430,6 +430,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const minigameStageRef = useRef<HTMLElement>(null);
   const successAudioRef = useRef<AudioContext | null>(null);
   const warningAudioRef = useRef<AudioContext | null>(null);
+  const misfireAudioRef = useRef<AudioContext | null>(null);
   const lastWarningSecondRef = useRef<string | null>(null);
   const removedPlayerRef = useRef(false);
 
@@ -470,12 +471,52 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   useEffect(() => {
     if (!misfiredControl) return;
     const timeout = window.setTimeout(() => setMisfiredControl(null), 320);
+
+    // Play "uh-uhh" error sound — two descending tones.
+    if (typeof window !== 'undefined') {
+      const AudioContextClass = window.AudioContext || (window as typeof window & {
+        webkitAudioContext?: typeof AudioContext;
+      }).webkitAudioContext;
+      if (AudioContextClass) {
+        const ctx = misfireAudioRef.current ?? new AudioContextClass();
+        misfireAudioRef.current = ctx;
+        if (ctx.state === 'suspended') void ctx.resume();
+
+        const t = ctx.currentTime;
+        const gain = ctx.createGain();
+        gain.connect(ctx.destination);
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.12, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+
+        // First tone — higher pitch
+        const osc1 = ctx.createOscillator();
+        osc1.type = 'square';
+        osc1.frequency.setValueAtTime(440, t);
+        osc1.frequency.exponentialRampToValueAtTime(380, t + 0.12);
+        osc1.connect(gain);
+        osc1.start(t);
+        osc1.stop(t + 0.14);
+
+        // Second tone — lower pitch, slight pause
+        const osc2 = ctx.createOscillator();
+        osc2.type = 'square';
+        osc2.frequency.setValueAtTime(330, t + 0.18);
+        osc2.frequency.exponentialRampToValueAtTime(220, t + 0.38);
+        osc2.connect(gain);
+        osc2.start(t + 0.18);
+        osc2.stop(t + 0.4);
+      }
+    }
+
     return () => window.clearTimeout(timeout);
   }, [misfiredControl]);
 
   useEffect(() => () => {
     void successAudioRef.current?.close();
     successAudioRef.current = null;
+    void misfireAudioRef.current?.close();
+    misfireAudioRef.current = null;
     void warningAudioRef.current?.close();
     warningAudioRef.current = null;
   }, []);
@@ -887,38 +928,29 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   return (
     <main className="panel room-shell station-shell role-theme">
       <section className="top-rail">
-        <div className="pilot-card">
-          <div className="pilot-row">
-            <span className="eyebrow">Room {displayCode}</span>
-          </div>
-          <h2 style={{ marginTop: 8 }}>{playerName}</h2>
-          <div className="tag-row">
-            <span className="tag">station live</span>
+        <div className="top-bar">
+          <div className="top-bar-left">
+            <span className="top-name">{playerName}</span>
             <span className="tag">level {state.deploy.currentLevel}</span>
-            <span className="tag">{controls.length} controls</span>
+          </div>
+          <div className="top-bar-right">
+            <span className="top-timer">
+              {Math.floor(state.deploy.timeRemainingSeconds / 60)}:{String(state.deploy.timeRemainingSeconds % 60).padStart(2, '0')}
+            </span>
           </div>
         </div>
 
-        <div className="panel-muted stat-card compact-stat valuation-card">
-          <div className="status-head">
-            <div className={`signal ${trending === 'up' ? 'good' : 'danger'}`} />
-            <div className="stat-label">Valuation</div>
+        <div className="panel-muted valuation-card">
+          <div className="valuation-row">
+            <div className="status-head">
+              <div className={`signal ${trending === 'up' ? 'good' : 'danger'}`} />
+              <div className="stat-label">Market Cap</div>
+            </div>
+            <div className={`stat-value valuation-value ${trending}`}>
+              {formatValuation(valuation)}
+            </div>
           </div>
-          <div className={`stat-value valuation-value ${trending}`}>
-            {formatValuation(valuation)}
-          </div>
-          <Sparkline data={valuationHistory} height={36} />
-        </div>
-
-        <div className="panel-muted stat-card compact-stat">
-          <div className="status-head">
-            <div className="signal warn" />
-            <div className="stat-label">Time</div>
-          </div>
-          <div className="stat-value" style={{ fontSize: 22 }}>
-            {Math.floor(state.deploy.timeRemainingSeconds / 60)}:{String(state.deploy.timeRemainingSeconds % 60).padStart(2, '0')}
-          </div>
-          <div className="count-chip">{allLiveCount} live tasks</div>
+          <Sparkline data={valuationHistory} height={32} />
         </div>
       </section>
 
@@ -986,35 +1018,32 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
               const skin = getControlSkin(control);
 
               return (
-                <div
+                <button
                   className={[
-                    'panel-muted button-card',
+                    `control-button control-skin-${skin}`,
+                    hasPrompt ? 'ready' : '',
                     openSubControl === control ? 'active' : '',
                     misfiredControl === control ? 'misfired' : '',
                   ].filter(Boolean).join(' ')}
                   key={control}
+                  onClick={() => {
+                    if (!prompt) {
+                      adapter.misfireControl(playerId, control);
+                      setMisfiredControl(control);
+                      return;
+                    }
+
+                    if (requiresSubControlChoice(controlDef)) {
+                      setOpenSubControl(current => (current === control ? null : control));
+                      return;
+                    }
+
+                    launchMiniGame(prompt);
+                  }}
+                  type="button"
                 >
-                  <button
-                    className={`control-button control-skin-${skin}${hasPrompt ? ' ready' : ''}`}
-                    onClick={() => {
-                      if (!prompt) {
-                        adapter.misfireControl(playerId, control);
-                        setMisfiredControl(control);
-                        return;
-                      }
-
-                      if (requiresSubControlChoice(controlDef)) {
-                        setOpenSubControl(current => (current === control ? null : control));
-                        return;
-                      }
-
-                      launchMiniGame(prompt);
-                    }}
-                    type="button"
-                  >
-                    <ControlFace skin={skin} label={compactLabel(control)} hasPrompt={hasPrompt} />
-                  </button>
-                </div>
+                  <ControlFace skin={skin} label={compactLabel(control)} hasPrompt={hasPrompt} />
+                </button>
               );
             })}
           </div>

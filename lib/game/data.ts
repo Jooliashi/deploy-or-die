@@ -260,8 +260,6 @@ export const roles: RoleDefinition[] = [
     controls: [
       {
         label: 'Kubernetes',
-        // Mini-game idea: "pod doctor" — drag env vars into a pod spec to fix it
-        miniGameId: 'pod-doctor',
         subControls: {
           restartPod: [
             { label: 'A pod is stuck in CrashLoopBackOff because an environment variable is missing', timerSeconds: 18 },
@@ -281,7 +279,6 @@ export const roles: RoleDefinition[] = [
       },
       {
         label: 'Networking',
-        miniGameId: 'load-balancer-split',
         subControls: {
           fixDNS: [
             { label: 'DNS propagation is stuck and the new domain is not resolving', timerSeconds: 19 },
@@ -306,8 +303,6 @@ export const roles: RoleDefinition[] = [
     controls: [
       {
         label: 'Billing',
-        // Mini-game idea: "refund rush" — match invoices to correct refund amounts
-        miniGameId: 'refund-rush',
         subControls: {
           issueRefund: [
             { label: 'A bug accidentally charged every customer $1 million', timerSeconds: 14 },

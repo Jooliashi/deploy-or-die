@@ -89,7 +89,7 @@ function coRoomToState(room: LoadedJazzRoom): SharedRoomState {
     id: p.playerId,
     name: p.name,
     ready: p.ready,
-    controls: [...p.controls],
+    controls: p.controls?.$jazz ? [...p.controls] : [],
   }));
 
   return { deploy, players, gameStarted: room.gameStarted };
@@ -107,6 +107,9 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
   #playerControls: string[] | undefined;
   /** Whether this client is the host (runs the tick/spawn loop). */
   #isHost: boolean;
+  /** Guard against re-entrant progression checks (mutations fire subscriptions
+   *  which fire #emit which would re-enter #checkProgressionReady). */
+  #progressionInProgress = false;
   /** The owning Group for this room (for creating CoValues with correct access). */
   #ownerGroup: Group | undefined;
 
@@ -186,7 +189,6 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     const shuffled = [...sourcePool].sort(() => Math.random() - 0.5);
     const totalNeeded = players.length * count;
 
-    // If we need more controls than available, cycle through the pool.
     const pool: string[] = [];
     while (pool.length < totalNeeded) {
       pool.push(...shuffled);
@@ -194,14 +196,20 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
 
     for (let pi = 0; pi < players.length; pi++) {
       const player = players[pi];
-      // Clear existing controls.
-      while (player.controls.length > 0) {
-        player.controls.$jazz.splice(0, 1);
-      }
-      // Deal round-robin: player 0 gets indices 0,n,2n,... player 1 gets 1,n+1,2n+1,...
-      for (let ci = 0; ci < count; ci++) {
-        const idx = ci * players.length + pi;
-        player.controls.$jazz.push(pool[idx % pool.length]);
+      try {
+        if (!player.controls?.$jazz) continue;
+        // Clear existing controls.
+        while (player.controls.length > 0) {
+          player.controls.$jazz.splice(0, 1);
+        }
+        // Deal round-robin.
+        for (let ci = 0; ci < count; ci++) {
+          const idx = ci * players.length + pi;
+          player.controls.$jazz.push(pool[idx % pool.length]);
+        }
+      } catch {
+        // Controls CoList not accessible yet — skip this player.
+        continue;
       }
     }
   }
@@ -326,6 +334,10 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     this.#spawnIfNeeded();
   }
 
+  /** Tracks labels used in the current cycle. When all labels in the
+   *  applicable pool have been used, the set resets so prompts can repeat. */
+  #usedLabels = new Set<string>();
+
   /** Keep a deep queue per player. Prompts in the queue have createdAt = 0
    *  (not yet started). The tick activates the next one when a player has no
    *  active prompt. This means the next task appears instantly. */
@@ -380,9 +392,7 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     }
   }
 
-  /** Pick a prompt template. In demo: from the player's own controls. In
-   *  multiplayer: from controls the player does NOT have (so they must
-   *  communicate). Avoids recently used labels. */
+  /** Pick a prompt template from the current available pool. */
   #pickTemplate(
     isDemo: boolean,
     playerCtrls: string[],
@@ -391,18 +401,14 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     let pool: typeof promptPool;
 
     if (isDemo) {
-      // Demo: player sees tasks for their own controls.
       pool = this.#playerControls
         ? promptPool.filter(t => this.#playerControls!.slice(0, getLevelConfig(this.#room.deploy.currentLevel).buttonCount).includes(t.actionLabel))
         : promptPool;
     } else {
-      // Multiplayer: pick prompts for controls this player does NOT have
-      // but that some other player does (so someone can act on it).
       const otherControls = [...allPlayerControls].filter(c => !playerCtrls.includes(c));
       if (otherControls.length > 0) {
         pool = promptPool.filter(t => otherControls.includes(t.actionLabel));
       } else {
-        // Fallback: all controls in the game.
         pool = promptPool.filter(t => allPlayerControls.has(t.actionLabel));
       }
     }
@@ -487,23 +493,38 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
   /** Start the game or advance a level once everyone is ready. */
   #checkProgressionReady(): void {
     if (!this.#isHost) return;
+    if (this.#progressionInProgress) return;
     const players = this.#room.players;
     if (!this.#room.gameStarted && players.length < 2) return;
-    const allReady = players.every(p => p.ready);
+    // All players must be ready AND have their controls CoList loaded.
+    const allReady = players.every(p => {
+      try { return p.ready && p.controls && p.controls.$jazz && typeof p.controls.length === 'number'; }
+      catch { return false; }
+    });
     if (!allReady) return;
 
-    if (!this.#room.gameStarted) {
-      this.#setLevelBriefing(1);
-      this.#room.$jazz.set('gameStarted', true);
-      return;
-    }
+    this.#progressionInProgress = true;
+    try {
+      if (!this.#room.gameStarted) {
+        this.#setLevelBriefing(1);
+        this.#room.$jazz.set('gameStarted', true);
+        return;
+      }
 
-    if (this.#room.deploy.levelPhase === 'briefing') {
-      this.#startLevel(this.#room.deploy.currentLevel);
+      if (this.#room.deploy.levelPhase === 'briefing') {
+        this.#startLevel(this.#room.deploy.currentLevel);
+      }
+    } finally {
+      this.#progressionInProgress = false;
     }
   }
 
   #emit(): void {
+    // Re-check progression whenever synced state changes — this handles
+    // the case where a remote player's ready state arrives after the host
+    // already checked.
+    this.#checkProgressionReady();
+
     const state = coRoomToState(this.#room);
     for (const listener of this.#listeners) {
       listener(state);
