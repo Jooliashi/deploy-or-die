@@ -5,12 +5,10 @@ import { roles } from '@/lib/game/data';
 
 const TARGET_COUNT = 6;
 
-/** Flat list of all controls with their role info. */
+/** Flat list of all available control labels. */
 const allControls = roles.flatMap(role =>
   role.controls.map(control => ({
     label: control.label,
-    roleId: role.id,
-    roleName: role.name,
   })),
 );
 
@@ -78,7 +76,6 @@ export function DemoControlPicker({ playerName, onConfirm }: DemoControlPickerPr
                 type="button"
               >
                 <span className="picker-card-label">{control.label}</span>
-                <span className="picker-card-role">{control.roleName}</span>
               </button>
             );
           })}

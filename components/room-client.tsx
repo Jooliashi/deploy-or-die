@@ -5,7 +5,7 @@ import { DemoControlPicker } from '@/components/demo-control-picker';
 import { hasMiniGame, MiniGamePanel } from '@/components/minigames';
 import { Sparkline } from '@/components/sparkline';
 import { WaitingRoom } from '@/components/waiting-room';
-import { getControlLabels, roles } from '@/lib/game/data';
+import { roles } from '@/lib/game/data';
 import type { ControlDefinition, PromptDefinition } from '@/lib/game/types';
 import {
   createJazzRoom,
@@ -23,12 +23,7 @@ interface RoomClientProps {
   isHost: boolean;
 }
 
-const roleGlyph: Record<string, string> = {
-  frontend: '◫',
-  backend: '◎',
-  database: '◉',
-  success: '✦',
-};
+
 
 const promptGlyph: Record<string, string> = {
   queued: '!',
@@ -327,16 +322,7 @@ function formatValuation(v: number): string {
   return `$${v}`;
 }
 
-/** All control labels for the player's UI (includes non-playable for display). */
-function getPlayerControls(roleId: string): string[] {
-  const own = getControlLabels(roleId as typeof roles[number]['id']);
-  const others = roles
-    .filter(r => r.id !== roleId)
-    .flatMap(r => r.controls.map(control => control.label))
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 2);
-  return [...own, ...others];
-}
+
 
 
 
@@ -397,15 +383,10 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const minigameStageRef = useRef<HTMLElement>(null);
   const successAudioRef = useRef<AudioContext | null>(null);
 
-  // Derive role and controls unconditionally (before any early returns).
-  const currentRole = state?.players.find(p => p.id === playerId)?.role ?? 'frontend';
-  const role = roles.find(r => r.id === currentRole) ?? roles[0];
-  // Always show 6 buttons. In demo, use the user's chosen set; in multiplayer,
-  // compute fresh (stable via useMemo).
-  const controls = useMemo(
-    () => demoControls ?? getPlayerControls(currentRole),
-    [demoControls, currentRole],
-  );
+  // Get this player's controls from the shared state (assigned by host on
+  // game start). In demo, use the user's chosen set. Falls back to empty.
+  const stateControls = state?.players.find(p => p.id === playerId)?.controls ?? [];
+  const controls = demoControls ?? (stateControls.length > 0 ? stateControls : []);
   const openControlDefinition = openSubControl ? getControlDefinition(openSubControl) : undefined;
 
   // Async load for multiplayer rooms.
@@ -656,19 +637,16 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     : roomCode;
 
   return (
-    <main className={`panel room-shell station-shell role-theme role-${role.id}`}>
+    <main className="panel room-shell station-shell role-theme">
       <section className="top-rail">
-        <div className={`pilot-card pilot-card-${role.id}`}>
+        <div className="pilot-card">
           <div className="pilot-row">
             <span className="eyebrow">Room {displayCode}</span>
-            <span className={`role-glyph role-glyph-${role.id}`} aria-hidden="true">
-              {roleGlyph[role.id]}
-            </span>
           </div>
-          <h2 style={{ marginTop: 8 }}>{role.name}</h2>
+          <h2 style={{ marginTop: 8 }}>{playerName}</h2>
           <div className="tag-row">
-            <span className="tag">{playerName}</span>
             <span className="tag">station live</span>
+            <span className="tag">{controls.length} controls</span>
           </div>
         </div>
 
@@ -750,7 +728,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
           )}
         </section>
 
-        <section className={`station stack station-${role.id}`}>
+        <section className="station stack">
           <div className="command-board">
             {controls.map(control => {
               const prompt = actionablePrompt?.actionLabel === control ? actionablePrompt : undefined;
@@ -762,14 +740,13 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
                 <div
                   className={[
                     'panel-muted button-card',
-                    `button-card-${role.id}`,
                     openSubControl === control ? 'active' : '',
                     misfiredControl === control ? 'misfired' : '',
                   ].filter(Boolean).join(' ')}
                   key={control}
                 >
                   <button
-                    className={`control-button control-button-${role.id} control-skin-${skin}${hasPrompt ? ' ready' : ''}`}
+                    className={`control-button control-skin-${skin}${hasPrompt ? ' ready' : ''}`}
                     onClick={() => {
                       if (!prompt) {
                         adapter.misfireControl(playerId, control);
@@ -797,7 +774,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
         {openSubControl && openControlDefinition ? (
           // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
           <div className="mini-backdrop" onClick={handleSubcontrolBackdropClick}>
-            <section className={`mini-stage mini-stage-${role.id} subcontrol-stage`} ref={subcontrolStageRef}>
+            <section className="mini-stage subcontrol-stage" ref={subcontrolStageRef}>
               <div>
                 <span className="eyebrow">Choose Action</span>
                 <h3 style={{ marginTop: 8 }}>{openSubControl}</h3>
@@ -848,7 +825,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
           <div className="mini-backdrop mini-backdrop-game" onClick={handleMiniGameBackdropClick}>
             <section
               aria-modal="true"
-              className={`mini-stage mini-stage-${role.id} mini-stage-game`}
+              className="mini-stage mini-stage-game"
               ref={minigameStageRef}
               role="dialog"
             >

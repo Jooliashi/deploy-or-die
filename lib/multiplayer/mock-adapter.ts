@@ -1,19 +1,18 @@
-import { demoDeployState, roles } from '@/lib/game/data';
+import { demoDeployState } from '@/lib/game/data';
 import type { MultiplayerAdapter, SharedRoomState } from '@/lib/multiplayer/types';
 
 const initialState: SharedRoomState = {
   deploy: demoDeployState,
   players: [
-    { id: 'p1', name: 'Alex', role: roles[0].id, ready: false },
-    { id: 'p2', name: 'Jules', role: roles[1].id, ready: false },
-    { id: 'p3', name: 'Mina', role: roles[2].id, ready: false },
+    { id: 'p1', name: 'Alex', ready: false, controls: [] },
+    { id: 'p2', name: 'Jules', ready: false, controls: [] },
+    { id: 'p3', name: 'Mina', ready: false, controls: [] },
   ],
   gameStarted: false,
 };
 
 export class MockMultiplayerAdapter implements MultiplayerAdapter {
   #state: SharedRoomState = initialState;
-
   #listeners = new Set<(state: SharedRoomState) => void>();
 
   getInitialState() {
@@ -23,12 +22,11 @@ export class MockMultiplayerAdapter implements MultiplayerAdapter {
   addPlayer(playerId: string, name: string) {
     const exists = this.#state.players.some(p => p.id === playerId);
     if (exists) return;
-    const role = roles[this.#state.players.length % roles.length].id;
     this.#state = {
       ...this.#state,
       players: [
         ...this.#state.players,
-        { id: playerId, name, role, ready: false },
+        { id: playerId, name, ready: false, controls: [] },
       ],
     };
     this.#emit();
@@ -132,5 +130,4 @@ export class MockMultiplayerAdapter implements MultiplayerAdapter {
   }
 }
 
-// Replace this with a Jazz-powered room adapter once the room schema is locked.
 export const multiplayerAdapter = new MockMultiplayerAdapter();

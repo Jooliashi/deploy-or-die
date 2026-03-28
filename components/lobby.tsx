@@ -192,17 +192,17 @@ export function Lobby() {
           <div className="panel-muted landing-info-card">
             <h3>Multiplayer</h3>
             <p>
-              Create a room and share the link. Each player gets a role with
-              different controls. Tasks are delegated -- communicate to survive
-              the deploy.
+              Create a room and share the link. Each player gets a random set
+              of controls. You&apos;ll see tasks meant for others -- communicate
+              to survive the deploy.
             </p>
           </div>
           <div className="panel-muted landing-info-card">
-            <h3>Roles</h3>
+            <h3>Teamwork</h3>
             <p>
-              <strong>Frontend</strong> owns client patches and edge cache.{' '}
-              <strong>Backend</strong> handles routes, workers, and webhooks.{' '}
-              <strong>Infra</strong> manages regions, pipelines, and error storms.
+              Controls are distributed evenly. When a task pops up on your
+              screen, tell the right person what button to press before the
+              timer runs out.
             </p>
           </div>
         </div>

@@ -13,12 +13,7 @@ interface WaitingRoomProps {
 
 const MIN_PLAYERS = 2;
 
-const roleGlyph: Record<string, string> = {
-  frontend: '◫',
-  backend: '◎',
-  database: '◉',
-  success: '✦',
-};
+
 
 export function WaitingRoom({ roomCode, playerId, playerName, state, adapter }: WaitingRoomProps) {
   const playerCount = state.players.length;
@@ -87,7 +82,6 @@ export function WaitingRoom({ roomCode, playerId, playerName, state, adapter }: 
                   />
                   <div className="player-info">
                     <span className="player-name">{player.name}</span>
-                    <span className="tag">{player.role}</span>
                   </div>
                   {player.id === playerId && <span className="tag you-tag">you</span>}
                   <span className={`tag ${player.ready ? 'ready-tag' : ''}`}>

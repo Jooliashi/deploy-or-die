@@ -1,10 +1,11 @@
-import type { DeployState, PromptDefinition, RoleId } from '@/lib/game/types';
+import type { DeployState, PromptDefinition } from '@/lib/game/types';
 
 export interface PlayerPresence {
   id: string;
   name: string;
-  role: RoleId;
   ready: boolean;
+  /** The control labels assigned to this player. */
+  controls: string[];
 }
 
 export interface SharedRoomState {
