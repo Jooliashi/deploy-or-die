@@ -340,10 +340,6 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     this.#spawnIfNeeded();
   }
 
-  /** Tracks labels used in the current cycle. When all labels in the
-   *  applicable pool have been used, the set resets so prompts can repeat. */
-  #usedLabels = new Set<string>();
-
   /** Keep a deep queue per player. Prompts in the queue have createdAt = 0
    *  (not yet started). The tick activates the next one when a player has no
    *  active prompt. This means the next task appears instantly. */
@@ -370,6 +366,10 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     for (let pi = 0; pi < players.length; pi++) {
       const player = players[pi];
       const playerCtrls = [...player.controls].slice(0, activeButtonCount);
+      const recentLabels = this.#room.deploy.prompts
+        .filter(p => p.assignedTo === player.playerId)
+        .slice(-2)
+        .map(p => p.label);
 
       // Pipeline = all queued/active prompts for this player.
       const pipeline = this.#room.deploy.prompts.filter(
@@ -380,8 +380,12 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
       if (needed <= 0) continue;
 
       for (let d = 0; d < needed; d++) {
-        const template = this.#pickTemplate(isDemo, playerCtrls, allPlayerControls);
+        const template = this.#pickTemplate(isDemo, playerCtrls, allPlayerControls, recentLabels);
         if (!template) continue;
+        recentLabels.push(template.label);
+        if (recentLabels.length > 2) {
+          recentLabels.shift();
+        }
 
         promptCounter += 1;
         this.#room.deploy.prompts.$jazz.push({
@@ -405,6 +409,7 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     isDemo: boolean,
     playerCtrls: string[],
     allPlayerControls: Set<string>,
+    recentLabels: string[],
   ) {
     let pool: typeof promptPool;
 
@@ -422,7 +427,10 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     }
 
     if (pool.length === 0) return null;
-    return pool[Math.floor(Math.random() * pool.length)];
+    const recentSet = new Set(recentLabels);
+    const filteredPool = pool.filter(template => !recentSet.has(template.label));
+    const sourcePool = filteredPool.length > 0 ? filteredPool : pool;
+    return sourcePool[Math.floor(Math.random() * sourcePool.length)];
   }
 
   /** For each player, if they have no "started" prompt (createdAt > 0 and

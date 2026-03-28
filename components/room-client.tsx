@@ -37,10 +37,11 @@ type ControlSkin =
   | 'browser'
   | 'toggle'
   | 'flag'
-  | 'chart'
+  | 'configs'
+  | 'statuspage'
   | 'terminal'
   | 'switch'
-  | 'globe'
+  | 'function'
   | 'cache'
   | 'clickhouse'
   | 'dynamodb'
@@ -50,6 +51,10 @@ type ControlSkin =
   | 'reply'
   | 'vendor'
   | 'it'
+  | 'kubernetes'
+  | 'networking'
+  | 'billing'
+  | 'security'
   | 'broadcast';
 
 /** Display label for a control button. The labels from data.ts are already
@@ -76,13 +81,13 @@ function getControlSkin(control: string): ControlSkin {
     case 'Flags':
       return 'flag';
     case 'Configs':
-      return 'chart';
+      return 'configs';
     case 'Edge Config':
       return 'terminal';
     case 'Workflow':
       return 'switch';
     case 'Vercel Function':
-      return 'globe';
+      return 'function';
     case 'Cache':
       return 'cache';
     case 'ClickHouse':
@@ -100,9 +105,17 @@ function getControlSkin(control: string): ControlSkin {
     case 'Vendor':
       return 'vendor';
     case 'Status Page':
-      return 'chart';
+      return 'statuspage';
     case 'IT':
       return 'it';
+    case 'Kubernetes':
+      return 'kubernetes';
+    case 'Networking':
+      return 'networking';
+    case 'Billing':
+      return 'billing';
+    case 'Security':
+      return 'security';
     default:
       return 'broadcast';
   }
@@ -116,14 +129,16 @@ function getControlCodes(skin: ControlSkin): [string, string] {
       return ['CM', '02'];
     case 'flag':
       return ['FG', '03'];
-    case 'chart':
-      return ['AN', '04'];
+    case 'configs':
+      return ['CF', '04'];
+    case 'statuspage':
+      return ['SP', '18'];
     case 'terminal':
       return ['EC', '05'];
     case 'switch':
       return ['CR', '06'];
-    case 'globe':
-      return ['RG', '07'];
+    case 'function':
+      return ['FN', '07'];
     case 'cache':
       return ['RC', '08'];
     case 'clickhouse':
@@ -142,6 +157,14 @@ function getControlCodes(skin: ControlSkin): [string, string] {
       return ['VN', '15'];
     case 'it':
       return ['IT', '17'];
+    case 'kubernetes':
+      return ['K8', '19'];
+    case 'networking':
+      return ['NW', '20'];
+    case 'billing':
+      return ['BL', '21'];
+    case 'security':
+      return ['SC', '22'];
     default:
       return ['HT', '16'];
   }
@@ -186,14 +209,44 @@ function ControlFace({ skin, label, hasPrompt }: { skin: ControlSkin; label: str
           <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
         </div>
       );
-    case 'chart':
+    case 'configs':
       return (
-        <div className="control-face control-face-chart">
-          <div className="chart-bars">
-            <span />
-            <span />
-            <span className={hasPrompt ? 'active' : ''} />
-          </div>
+        <div className="control-face control-face-configs">
+          <svg
+            aria-hidden="true"
+            className={`brand-mark${hasPrompt ? ' active' : ''}`}
+            viewBox="0 0 120 96"
+          >
+            <rect x="18" y="20" width="84" height="12" rx="6" fill="none" stroke="currentColor" strokeWidth="6" />
+            <circle cx="42" cy="26" r="8" fill="currentColor" />
+            <rect x="18" y="44" width="84" height="12" rx="6" fill="none" stroke="currentColor" strokeWidth="6" />
+            <circle cx="78" cy="50" r="8" fill="currentColor" />
+            <rect x="18" y="68" width="84" height="12" rx="6" fill="none" stroke="currentColor" strokeWidth="6" />
+            <circle cx="58" cy="74" r="8" fill="currentColor" />
+          </svg>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'statuspage':
+      return (
+        <div className="control-face control-face-statuspage">
+          <svg
+            aria-hidden="true"
+            className={`brand-mark${hasPrompt ? ' active' : ''}`}
+            viewBox="0 0 120 96"
+          >
+            <path
+              d="M12 56h18l10-22 16 40 14-28 10 10h18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <circle cx="20" cy="56" r="5" fill="currentColor" />
+            <circle cx="98" cy="56" r="5" fill="currentColor" />
+          </svg>
           <div className="face-label">{label}</div>
           <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
         </div>
@@ -214,16 +267,19 @@ function ControlFace({ skin, label, hasPrompt }: { skin: ControlSkin; label: str
           <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
         </div>
       );
-    case 'globe':
+    case 'function':
       return (
-        <div className="control-face control-face-globe">
-          <div className={`globe-icon${hasPrompt ? ' active' : ''}`}>
-            <span className="globe-ring" />
-            <span className="globe-lat" />
-            <span className="globe-lat bottom" />
-            <span className="globe-meridian left" />
-            <span className="globe-meridian right" />
-          </div>
+        <div className="control-face control-face-function">
+          <svg
+            aria-hidden="true"
+            className={`brand-mark${hasPrompt ? ' active' : ''}`}
+            viewBox="0 0 120 96"
+          >
+            <path d="M22 28h52" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
+            <path d="M54 28c-10 0-18 8-18 18s8 18 18 18h44" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
+            <path d="M76 58l20 0" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
+            <path d="M84 18l18 10-18 10" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
           <div className="face-label">{label}</div>
           <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
         </div>
@@ -347,6 +403,78 @@ function ControlFace({ skin, label, hasPrompt }: { skin: ControlSkin; label: str
             <span className="it-base" />
             <span className="it-badge" />
           </div>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'kubernetes':
+      return (
+        <div className="control-face control-face-kubernetes">
+          <svg
+            aria-hidden="true"
+            className={`brand-mark${hasPrompt ? ' active' : ''}`}
+            viewBox="0 0 120 96"
+          >
+            <circle cx="60" cy="48" r="12" fill="none" stroke="currentColor" strokeWidth="6" />
+            <circle cx="60" cy="16" r="7" fill="currentColor" />
+            <circle cx="88" cy="32" r="7" fill="currentColor" />
+            <circle cx="88" cy="64" r="7" fill="currentColor" />
+            <circle cx="60" cy="80" r="7" fill="currentColor" />
+            <circle cx="32" cy="64" r="7" fill="currentColor" />
+            <circle cx="32" cy="32" r="7" fill="currentColor" />
+            <path d="M60 28V22M72 36l10-6M72 60l10 6M60 68v6M48 60l-10 6M48 36l-10-6" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+          </svg>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'networking':
+      return (
+        <div className="control-face control-face-networking">
+          <svg
+            aria-hidden="true"
+            className={`brand-mark${hasPrompt ? ' active' : ''}`}
+            viewBox="0 0 120 96"
+          >
+            <circle cx="24" cy="48" r="8" fill="currentColor" />
+            <circle cx="60" cy="24" r="8" fill="currentColor" />
+            <circle cx="60" cy="72" r="8" fill="currentColor" />
+            <circle cx="96" cy="48" r="8" fill="currentColor" />
+            <path d="M32 48h56M60 32v32M30 44l24-16M30 52l24 16M66 32l24 16M66 64l24-16" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </svg>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'billing':
+      return (
+        <div className="control-face control-face-billing">
+          <svg
+            aria-hidden="true"
+            className={`brand-mark${hasPrompt ? ' active' : ''}`}
+            viewBox="0 0 120 96"
+          >
+            <rect x="16" y="22" width="88" height="52" rx="10" fill="none" stroke="currentColor" strokeWidth="6" />
+            <rect x="16" y="34" width="88" height="10" fill="currentColor" opacity="0.9" />
+            <rect x="28" y="56" width="24" height="8" rx="4" fill="currentColor" opacity="0.7" />
+            <rect x="62" y="56" width="26" height="8" rx="4" fill="currentColor" />
+          </svg>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
+    case 'security':
+      return (
+        <div className="control-face control-face-security">
+          <svg
+            aria-hidden="true"
+            className={`brand-mark${hasPrompt ? ' active' : ''}`}
+            viewBox="0 0 120 96"
+          >
+            <path d="M60 16l28 10v22c0 18-11 29-28 34-17-5-28-16-28-34V26l28-10z" fill="none" stroke="currentColor" strokeWidth="6" strokeLinejoin="round" />
+            <path d="M48 48a12 12 0 1 1 24 0v10H48V48z" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+            <rect x="44" y="56" width="32" height="18" rx="6" fill="none" stroke="currentColor" strokeWidth="6" />
+          </svg>
           <div className="face-label">{label}</div>
           <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
         </div>

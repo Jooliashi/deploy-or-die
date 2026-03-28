@@ -390,7 +390,7 @@ function buildChannelOptions(value: number): number[] {
   const distractors = CHANNEL_BANK
     .filter(entry => entry !== value)
     .sort(() => Math.random() - 0.5)
-    .slice(0, 2);
+    .slice(0, 1);
 
   return [value, ...distractors].sort(() => Math.random() - 0.5);
 }
@@ -1539,19 +1539,19 @@ function spawnRequest(): TrafficRequest {
 
 function TrafficFilterGame({ onResolve }: { onResolve: () => void }) {
   const [requests, setRequests] = useState<TrafficRequest[]>(() =>
-    Array.from({ length: 4 }, spawnRequest),
+    Array.from({ length: 5 }, spawnRequest),
   );
   const [score, setScore] = useState(0);
   const [mistakes, setMistakes] = useState(0);
-  const TARGET = 5;
+  const TARGET = 7;
 
   useEffect(() => {
     const t = setInterval(() => {
       setRequests(prev => {
-        const next = [...prev.slice(-5), spawnRequest()];
+        const next = [...prev.slice(-6), spawnRequest()];
         return next;
       });
-    }, 1200);
+    }, 750);
     return () => clearInterval(t);
   }, []);
 
@@ -1585,6 +1585,9 @@ function TrafficFilterGame({ onResolve }: { onResolve: () => void }) {
             onClick={() => tap(req)}
             type="button"
           >
+            <span className="traffic-marker" aria-hidden="true">
+              {req.malicious ? 'BLOCK' : 'PASS'}
+            </span>
             <code>{req.label}</code>
           </button>
         ))}
