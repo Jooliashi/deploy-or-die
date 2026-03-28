@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { MiniGameId } from '@/lib/game/types';
 
 interface MiniGamePanelProps {
@@ -714,8 +714,148 @@ function BugBashGame({ onResolve }: { onResolve: () => void }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Find the Logs — word search in a 10×10 grid of scrambled-case gibberish
+// ---------------------------------------------------------------------------
+
+const LOG_WORDS = [
+  'ERROR', 'FATAL', 'PANIC', 'ABORT', 'CRASH',
+  'TIMEOUT', 'REJECT', 'FAILED', 'BROKEN', 'STALE',
+  'DENIED', 'LEAKED', 'ORPHAN', 'STUCK', 'DRAIN',
+];
+
+const GRID_SIZE = 10;
+const CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*!?><;:';
+
+function scrambleCase(s: string): string {
+  return s.split('').map(c => (Math.random() > 0.5 ? c.toUpperCase() : c.toLowerCase())).join('');
+}
+
+interface LogGrid {
+  cells: string[][];
+  word: string;
+  wordCells: Set<string>; // "row,col" keys
+}
+
+function generateLogGrid(): LogGrid {
+  const word = LOG_WORDS[Math.floor(Math.random() * LOG_WORDS.length)];
+
+  // Fill grid with random chars, all with scrambled case.
+  const cells: string[][] = Array.from({ length: GRID_SIZE }, () =>
+    Array.from({ length: GRID_SIZE }, () =>
+      CHARS[Math.floor(Math.random() * CHARS.length)],
+    ),
+  );
+
+  // Place the word in a random direction.
+  const directions: [number, number][] = [
+    [0, 1],   // horizontal
+    [1, 0],   // vertical
+    [1, 1],   // diagonal down-right
+    [1, -1],  // diagonal down-left
+  ];
+
+  let placed = false;
+  const wordCells = new Set<string>();
+  const scrambled = scrambleCase(word);
+
+  for (let attempt = 0; attempt < 200 && !placed; attempt++) {
+    const [dr, dc] = directions[Math.floor(Math.random() * directions.length)];
+    const startRow = Math.floor(Math.random() * GRID_SIZE);
+    const startCol = Math.floor(Math.random() * GRID_SIZE);
+
+    // Check bounds.
+    const endRow = startRow + dr * (scrambled.length - 1);
+    const endCol = startCol + dc * (scrambled.length - 1);
+    if (endRow < 0 || endRow >= GRID_SIZE || endCol < 0 || endCol >= GRID_SIZE) continue;
+
+    // Place it.
+    wordCells.clear();
+    for (let i = 0; i < scrambled.length; i++) {
+      const r = startRow + dr * i;
+      const c = startCol + dc * i;
+      cells[r][c] = scrambled[i];
+      wordCells.add(`${r},${c}`);
+    }
+    placed = true;
+  }
+
+  return { cells, word, wordCells };
+}
+
+function FindTheLogsGame({ onResolve }: { onResolve: () => void }) {
+  const [grid, setGrid] = useState<LogGrid>(generateLogGrid);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [wrongFlash, setWrongFlash] = useState(false);
+
+  const toggle = useCallback((key: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
+
+  // Check if the selection matches the word cells.
+  useEffect(() => {
+    if (selected.size === 0) return;
+    if (selected.size !== grid.wordCells.size) return;
+
+    const isCorrect = [...selected].every(k => grid.wordCells.has(k));
+    if (isCorrect) {
+      onResolve();
+    } else if (selected.size === grid.wordCells.size) {
+      // Wrong selection — flash and reset.
+      setWrongFlash(true);
+      const t = setTimeout(() => {
+        setWrongFlash(false);
+        setSelected(new Set());
+        setGrid(generateLogGrid());
+      }, 600);
+      return () => clearTimeout(t);
+    }
+  }, [selected, grid.wordCells, onResolve]);
+
+  return (
+    <div className="mini-shell mini-shell-logs">
+      <div className="mini-callout mini-callout-logs">
+        Find the word in the logs
+      </div>
+
+      <div className="logs-target">
+        <span className="logs-target-word">{grid.word}</span>
+        <span className="logs-target-hint">{selected.size} / {grid.wordCells.size} selected</span>
+      </div>
+
+      <div className={`logs-grid${wrongFlash ? ' logs-wrong' : ''}`}>
+        {grid.cells.map((row, ri) =>
+          row.map((char, ci) => {
+            const key = `${ri},${ci}`;
+            const isSel = selected.has(key);
+            return (
+              <button
+                className={`logs-cell${isSel ? ' logs-cell-selected' : ''}`}
+                key={key}
+                onClick={() => toggle(key)}
+                type="button"
+              >
+                {char}
+              </button>
+            );
+          }),
+        )}
+      </div>
+    </div>
+  );
+}
+
 const IMPLEMENTED_MINIGAMES = new Set<MiniGameId>([
   'bug-bash',
+  'find-the-logs',
   'guess-the-country',
   'guess-the-hex',
   'math',
@@ -737,6 +877,10 @@ export function MiniGamePanel({
 
   if (miniGameId === 'guess-the-country') {
     return <GuessTheCountryGame onResolve={onResolve} />;
+  }
+
+  if (miniGameId === 'find-the-logs') {
+    return <FindTheLogsGame onResolve={onResolve} />;
   }
 
   if (miniGameId === 'guess-the-hex') {

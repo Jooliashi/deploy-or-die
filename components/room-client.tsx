@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DemoControlPicker } from '@/components/demo-control-picker';
 import { hasMiniGame, MiniGamePanel } from '@/components/minigames';
 import { Sparkline } from '@/components/sparkline';
 import { WaitingRoom } from '@/components/waiting-room';
@@ -54,41 +55,10 @@ type ControlSkin =
   | 'vendor'
   | 'broadcast';
 
+/** Display label for a control button. The labels from data.ts are already
+ *  short enough to use directly. */
 function compactLabel(control: string) {
-  return control
-    .replace('Rebuild ', '')
-    .replace('Replay ', '')
-    .replace('Shift ', '')
-    .replace('Patch ', '')
-    .replace('Reconnect ', '')
-    .replace('Override ', '')
-    .replace('Sync ', '')
-    .replace('Purge ', '')
-    .replace('Restore ', '')
-    .replace('Promote ', '')
-    .replace('Backfill ', '')
-    .replace('Post ', '')
-    .replace('Reply to ', '')
-    .replace('Ping ', '')
-    .replace('Send ', '')
-    .replace('Challenge ', '')
-    .replace('Drain ', '')
-    .replace('Preview Deployment', 'PREVIEW')
-    .replace('Toolbar Comments', 'COMMENTS')
-    .replace('Flags Explorer', 'FLAGS')
-    .replace('Web Analytics', 'ANALYTICS')
-    .replace('Edge Config', 'CONFIG')
-    .replace('Cron Run', 'CRON')
-    .replace('Function Region', 'REGION')
-    .replace('Runtime Cache', 'CACHE')
-    .replace('Postgres Replica', 'POSTGRES')
-    .replace('KV Drift', 'KV')
-    .replace('Blob Asset', 'BLOB')
-    .replace('Session Store', 'SESSION')
-    .replace('Launch Thread', 'LAUNCH')
-    .replace('Enterprise Ticket', 'TICKET')
-    .replace('Integration Vendor', 'VENDOR')
-    .replace('How-To Blast', 'HOWTO');
+  return control;
 }
 
 function formatSubControlLabel(key: string) {
@@ -396,28 +366,23 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   // Stable unique player ID for this browser session.
   const playerId = useRef(`p_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`).current;
 
-  const demoRoleId = isDemo ? roles[0].id : undefined;
+  // In demo mode, the player picks their 6 controls before the game starts.
+  // `demoControls` is null until they confirm.
+  const [demoControls, setDemoControls] = useState<string[] | null>(null);
 
-  // Compute the 6 display controls once (stable across renders). In demo
-  // mode this is also used for spawn filtering so buttons and prompts match.
-  const demoControls = useMemo(
-    () => (demoRoleId ? getPlayerControls(demoRoleId) : undefined),
-    [demoRoleId],
-  );
+  const [adapter, setAdapter] = useState<MultiplayerAdapter | null>(null);
 
-
-  const [adapter, setAdapter] = useState<MultiplayerAdapter | null>(() => {
-    if (isDemo) {
-      const { room } = createJazzRoom({ roomCode, isDemo: true, playerControls: demoControls });
-      const a = new JazzMultiplayerAdapter(room, {
-        playerControls: demoControls,
-        isHost: true, // demo is always host
-      });
-      adapterRef.current = a;
-      return a;
-    }
-    return null;
-  });
+  // Create the demo adapter once controls are chosen.
+  const startDemo = useCallback((chosenControls: string[]) => {
+    setDemoControls(chosenControls);
+    const { room } = createJazzRoom({ roomCode, isDemo: true, playerControls: chosenControls });
+    const a = new JazzMultiplayerAdapter(room, {
+      playerControls: chosenControls,
+      isHost: true,
+    });
+    adapterRef.current = a;
+    setAdapter(a);
+  }, [roomCode]);
 
   const [loadError, setLoadError] = useState<string | null>(null);
   const [state, setState] = useState<SharedRoomState | null>(
@@ -435,7 +400,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   // Derive role and controls unconditionally (before any early returns).
   const currentRole = state?.players.find(p => p.id === playerId)?.role ?? 'frontend';
   const role = roles.find(r => r.id === currentRole) ?? roles[0];
-  // Always show 6 buttons. In demo, use the pre-computed set; in multiplayer,
+  // Always show 6 buttons. In demo, use the user's chosen set; in multiplayer,
   // compute fresh (stable via useMemo).
   const controls = useMemo(
     () => demoControls ?? getPlayerControls(currentRole),
@@ -597,6 +562,11 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   }, [activeMiniGamePrompt, adapter, closeMiniGame, minigameSuccess]);
 
   // ── Render gates (no hooks below this point) ──────────────
+
+  // Demo: show control picker before creating the adapter.
+  if (isDemo && !demoControls) {
+    return <DemoControlPicker playerName={playerName} onConfirm={startDemo} />;
+  }
 
   // Loading / error state.
   if (!adapter || !state) {
