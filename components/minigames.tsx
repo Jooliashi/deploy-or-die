@@ -1314,8 +1314,381 @@ function FindTheLogsGame({ onResolve }: { onResolve: () => void }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Cache Knowledge — cache trivia multiple choice
+// ---------------------------------------------------------------------------
+
+const CACHE_QUESTIONS = [
+  { q: 'Which header tells the browser to cache for 1 hour?', a: 'Cache-Control: max-age=3600', wrong: ['ETag: 3600', 'Expires: 1h', 'X-Cache: HIT'] },
+  { q: 'What does "stale-while-revalidate" do?', a: 'Serves stale while fetching fresh', wrong: ['Deletes the cache', 'Blocks until fresh', 'Returns 304 always'] },
+  { q: 'What status code means "Not Modified"?', a: '304', wrong: ['200', '301', '404'] },
+  { q: 'Which cache strategy never stores anything?', a: 'no-store', wrong: ['no-cache', 'must-revalidate', 'public'] },
+  { q: 'What does a CDN cache HIT mean?', a: 'Response served from edge', wrong: ['Response from origin', 'Cache was purged', 'Request was blocked'] },
+  { q: 'What validates if a cached resource changed?', a: 'ETag', wrong: ['Content-Type', 'Accept', 'Origin'] },
+];
+
+function CacheKnowledgeGame({ onResolve }: { onResolve: () => void }) {
+  const [idx, setIdx] = useState(() => Math.floor(Math.random() * CACHE_QUESTIONS.length));
+  const q = CACHE_QUESTIONS[idx];
+  const options = useMemo(() =>
+    [q.a, ...q.wrong].sort(() => Math.random() - 0.5),
+    [q],
+  );
+
+  return (
+    <div className="mini-shell mini-shell-cache">
+      <div className="mini-callout mini-callout-cache">{q.q}</div>
+      <div className="cache-options">
+        {options.map(opt => (
+          <button
+            key={opt}
+            className="cache-option"
+            onClick={() => {
+              if (opt === q.a) { onResolve(); return; }
+              setIdx(Math.floor(Math.random() * CACHE_QUESTIONS.length));
+            }}
+            type="button"
+          >{opt}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Pipeline Fixer — reorder shuffled CI/CD stages
+// ---------------------------------------------------------------------------
+
+const PIPELINE_STAGES = ['Lint', 'Test', 'Build', 'Deploy', 'Verify'];
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function PipelineFixerGame({ onResolve }: { onResolve: () => void }) {
+  const [order, setOrder] = useState(() => {
+    let s = shuffle(PIPELINE_STAGES);
+    while (s.every((v, i) => v === PIPELINE_STAGES[i])) s = shuffle(PIPELINE_STAGES);
+    return s;
+  });
+  const [dragging, setDragging] = useState<number | null>(null);
+
+  const swap = useCallback((from: number, to: number) => {
+    setOrder(prev => {
+      const next = [...prev];
+      [next[from], next[to]] = [next[to], next[from]];
+      return next;
+    });
+    setDragging(null);
+  }, []);
+
+  useEffect(() => {
+    if (order.every((v, i) => v === PIPELINE_STAGES[i])) {
+      onResolve();
+    }
+  }, [order, onResolve]);
+
+  return (
+    <div className="mini-shell mini-shell-pipeline">
+      <div className="mini-callout mini-callout-pipeline">Reorder the pipeline stages</div>
+      <div className="pipeline-stages">
+        {order.map((stage, i) => (
+          <button
+            key={stage}
+            className={`pipeline-stage${dragging === i ? ' pipeline-dragging' : ''}${stage === PIPELINE_STAGES[i] ? ' pipeline-correct' : ''}`}
+            onClick={() => {
+              if (dragging === null) { setDragging(i); return; }
+              swap(dragging, i);
+            }}
+            type="button"
+          >
+            <span className="pipeline-num">{i + 1}</span>
+            <span>{stage}</span>
+          </button>
+        ))}
+      </div>
+      {dragging !== null && <div className="pipeline-hint">Now tap where it should go</div>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Pod Doctor — pick the right env var to fix a crashing pod
+// ---------------------------------------------------------------------------
+
+const POD_SCENARIOS = [
+  { missing: 'DATABASE_URL', wrong: ['API_KEY', 'NODE_ENV', 'PORT'] },
+  { missing: 'REDIS_HOST', wrong: ['CACHE_TTL', 'LOG_LEVEL', 'TZ'] },
+  { missing: 'JWT_SECRET', wrong: ['SESSION_ID', 'HOSTNAME', 'PATH'] },
+  { missing: 'STRIPE_KEY', wrong: ['APP_NAME', 'DEBUG', 'LANG'] },
+  { missing: 'SMTP_PASSWORD', wrong: ['MAIL_FROM', 'TLS_CERT', 'USER'] },
+];
+
+function PodDoctorGame({ onResolve }: { onResolve: () => void }) {
+  const [idx, setIdx] = useState(() => Math.floor(Math.random() * POD_SCENARIOS.length));
+  const scenario = POD_SCENARIOS[idx];
+  const options = useMemo(() =>
+    [scenario.missing, ...scenario.wrong].sort(() => Math.random() - 0.5),
+    [scenario],
+  );
+
+  return (
+    <div className="mini-shell mini-shell-pod">
+      <div className="mini-callout mini-callout-pod">
+        Pod is crashing — which env var is missing?
+      </div>
+      <div className="pod-log">
+        <code>Error: Missing required environment variable <strong>{scenario.missing}</strong></code>
+      </div>
+      <div className="pod-options">
+        {options.map(opt => (
+          <button
+            key={opt}
+            className="pod-option"
+            onClick={() => {
+              if (opt === scenario.missing) { onResolve(); return; }
+              setIdx(Math.floor(Math.random() * POD_SCENARIOS.length));
+            }}
+            type="button"
+          ><code>{opt}</code></button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Refund Rush — match invoices to correct amounts
+// ---------------------------------------------------------------------------
+
+const REFUND_AMOUNTS = [
+  { invoice: 'INV-4021', charged: '$249.99', refund: '$249.99' },
+  { invoice: 'INV-4022', charged: '$99.00', refund: '$99.00' },
+  { invoice: 'INV-4023', charged: '$1,200.00', refund: '$1,200.00' },
+  { invoice: 'INV-4024', charged: '$49.95', refund: '$49.95' },
+  { invoice: 'INV-4025', charged: '$599.00', refund: '$599.00' },
+];
+
+function RefundRushGame({ onResolve }: { onResolve: () => void }) {
+  const [items] = useState(() => shuffle(REFUND_AMOUNTS).slice(0, 3));
+  const [selectedInvoice, setSelectedInvoice] = useState<number | null>(null);
+  const [shuffledRefunds] = useState(() => shuffle(items.map(i => i.refund)));
+  const [matched, setMatched] = useState<Set<number>>(new Set());
+
+  const handleRefundClick = useCallback((refund: string) => {
+    if (selectedInvoice === null) return;
+    if (items[selectedInvoice].refund === refund) {
+      const next = new Set(matched);
+      next.add(selectedInvoice);
+      setMatched(next);
+      setSelectedInvoice(null);
+      if (next.size === items.length) onResolve();
+    } else {
+      setSelectedInvoice(null);
+    }
+  }, [selectedInvoice, items, matched, onResolve]);
+
+  return (
+    <div className="mini-shell mini-shell-refund">
+      <div className="mini-callout mini-callout-refund">Match each invoice to its refund amount</div>
+      <div className="refund-columns">
+        <div className="refund-col">
+          {items.map((item, i) => (
+            <button
+              key={item.invoice}
+              className={`refund-card${selectedInvoice === i ? ' refund-selected' : ''}${matched.has(i) ? ' refund-matched' : ''}`}
+              onClick={() => !matched.has(i) && setSelectedInvoice(i)}
+              disabled={matched.has(i)}
+              type="button"
+            >
+              <span className="refund-id">{item.invoice}</span>
+              <span className="refund-amount">{item.charged}</span>
+            </button>
+          ))}
+        </div>
+        <div className="refund-col">
+          {shuffledRefunds.map(refund => {
+            const isMatched = [...matched].some(i => items[i].refund === refund);
+            return (
+              <button
+                key={refund}
+                className={`refund-card refund-target${isMatched ? ' refund-matched' : ''}`}
+                onClick={() => handleRefundClick(refund)}
+                disabled={isMatched}
+                type="button"
+              >
+                <span className="refund-amount">{refund}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Trace the Route — match domains to IPs
+// ---------------------------------------------------------------------------
+
+const DNS_PAIRS = [
+  { domain: 'api.vercel.com', ip: '76.76.21.21' },
+  { domain: 'cdn.example.io', ip: '104.18.32.7' },
+  { domain: 'auth.service.dev', ip: '52.44.128.90' },
+  { domain: 'db.internal.net', ip: '10.0.3.42' },
+  { domain: 'edge.fastly.com', ip: '151.101.1.57' },
+];
+
+function TraceTheRouteGame({ onResolve }: { onResolve: () => void }) {
+  const [pairs] = useState(() => shuffle(DNS_PAIRS).slice(0, 3));
+  const [shuffledIps] = useState(() => shuffle(pairs.map(p => p.ip)));
+  const [selectedDomain, setSelectedDomain] = useState<number | null>(null);
+  const [matched, setMatched] = useState<Set<number>>(new Set());
+
+  const handleIpClick = useCallback((ip: string) => {
+    if (selectedDomain === null) return;
+    if (pairs[selectedDomain].ip === ip) {
+      const next = new Set(matched);
+      next.add(selectedDomain);
+      setMatched(next);
+      setSelectedDomain(null);
+      if (next.size === pairs.length) onResolve();
+    } else {
+      setSelectedDomain(null);
+    }
+  }, [selectedDomain, pairs, matched, onResolve]);
+
+  return (
+    <div className="mini-shell mini-shell-route">
+      <div className="mini-callout mini-callout-route">Match each domain to its IP address</div>
+      <div className="route-columns">
+        <div className="route-col">
+          {pairs.map((pair, i) => (
+            <button
+              key={pair.domain}
+              className={`route-card${selectedDomain === i ? ' route-selected' : ''}${matched.has(i) ? ' route-matched' : ''}`}
+              onClick={() => !matched.has(i) && setSelectedDomain(i)}
+              disabled={matched.has(i)}
+              type="button"
+            ><code>{pair.domain}</code></button>
+          ))}
+        </div>
+        <div className="route-col">
+          {shuffledIps.map(ip => {
+            const isMatched = [...matched].some(i => pairs[i].ip === ip);
+            return (
+              <button
+                key={ip}
+                className={`route-card route-target${isMatched ? ' route-matched' : ''}`}
+                onClick={() => handleIpClick(ip)}
+                disabled={isMatched}
+                type="button"
+              ><code>{ip}</code></button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Traffic Filter — tap malicious requests, avoid good ones
+// ---------------------------------------------------------------------------
+
+interface TrafficRequest {
+  id: string;
+  label: string;
+  malicious: boolean;
+}
+
+const TRAFFIC_POOL = {
+  bad: [
+    'POST /admin?sql=DROP', 'GET /../../../etc/passwd', 'POST /login (10k rpm)',
+    'GET /api?<script>alert(1)', 'PUT /users/*/role=admin', 'DELETE /db/production',
+    'GET /wp-admin/install.php', 'POST /xmlrpc.php (bot)', 'GET /api?sleep(10)',
+  ],
+  good: [
+    'GET /index.html', 'POST /api/checkout', 'GET /images/logo.png',
+    'PUT /user/profile', 'GET /api/products?page=2', 'POST /auth/login',
+    'GET /docs/getting-started', 'POST /api/feedback', 'GET /health',
+  ],
+};
+
+function spawnRequest(): TrafficRequest {
+  const malicious = Math.random() < 0.5;
+  const pool = malicious ? TRAFFIC_POOL.bad : TRAFFIC_POOL.good;
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    label: pool[Math.floor(Math.random() * pool.length)],
+    malicious,
+  };
+}
+
+function TrafficFilterGame({ onResolve }: { onResolve: () => void }) {
+  const [requests, setRequests] = useState<TrafficRequest[]>(() =>
+    Array.from({ length: 4 }, spawnRequest),
+  );
+  const [score, setScore] = useState(0);
+  const [mistakes, setMistakes] = useState(0);
+  const TARGET = 5;
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setRequests(prev => {
+        const next = [...prev.slice(-5), spawnRequest()];
+        return next;
+      });
+    }, 1200);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    if (score >= TARGET) onResolve();
+  }, [score, onResolve]);
+
+  const tap = useCallback((req: TrafficRequest) => {
+    if (req.malicious) {
+      setScore(s => s + 1);
+    } else {
+      setMistakes(m => m + 1);
+    }
+    setRequests(prev => prev.filter(r => r.id !== req.id));
+  }, []);
+
+  return (
+    <div className="mini-shell mini-shell-traffic">
+      <div className="mini-callout mini-callout-traffic">
+        Tap the malicious requests — avoid legitimate ones
+      </div>
+      <div className="traffic-score">
+        <span className="traffic-good">{score}/{TARGET} blocked</span>
+        {mistakes > 0 && <span className="traffic-bad">{mistakes} false positive{mistakes > 1 ? 's' : ''}</span>}
+      </div>
+      <div className="traffic-feed">
+        {requests.map(req => (
+          <button
+            key={req.id}
+            className={`traffic-req${req.malicious ? ' traffic-mal' : ' traffic-legit'}`}
+            onClick={() => tap(req)}
+            type="button"
+          >
+            <code>{req.label}</code>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const IMPLEMENTED_MINIGAMES = new Set<MiniGameId>([
   'bug-bash',
+  'cache-knowledge',
   'find-the-logs',
   'guess-the-country',
   'guess-the-hex',
@@ -1325,6 +1698,11 @@ const IMPLEMENTED_MINIGAMES = new Set<MiniGameId>([
   'match-the-vendor',
   'monkey-type',
   'name-five-aws-region',
+  'pipeline-fixer',
+  'pod-doctor',
+  'refund-rush',
+  'trace-the-route',
+  'traffic-filter',
 ]);
 
 export function hasMiniGame(miniGameId: MiniGameId | undefined): miniGameId is MiniGameId {
@@ -1373,6 +1751,30 @@ export function MiniGamePanel({
 
   if (miniGameId === 'it-maze') {
     return <ItMazeGame onResolve={onResolve} />;
+  }
+
+  if (miniGameId === 'cache-knowledge') {
+    return <CacheKnowledgeGame onResolve={onResolve} />;
+  }
+
+  if (miniGameId === 'pipeline-fixer') {
+    return <PipelineFixerGame onResolve={onResolve} />;
+  }
+
+  if (miniGameId === 'pod-doctor') {
+    return <PodDoctorGame onResolve={onResolve} />;
+  }
+
+  if (miniGameId === 'refund-rush') {
+    return <RefundRushGame onResolve={onResolve} />;
+  }
+
+  if (miniGameId === 'trace-the-route') {
+    return <TraceTheRouteGame onResolve={onResolve} />;
+  }
+
+  if (miniGameId === 'traffic-filter') {
+    return <TrafficFilterGame onResolve={onResolve} />;
   }
 
   return null;

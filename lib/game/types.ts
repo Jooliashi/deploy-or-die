@@ -1,4 +1,4 @@
-export type RoleId = 'frontend' | 'backend' | 'database' | 'success';
+export type RoleId = 'frontend' | 'backend' | 'database' | 'success' | 'infra' | 'billing' | 'security';
 
 export type MiniGameId = string;
 export type LevelPhase = 'briefing' | 'playing' | 'complete';
