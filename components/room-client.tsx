@@ -430,6 +430,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const minigameStageRef = useRef<HTMLElement>(null);
   const successAudioRef = useRef<AudioContext | null>(null);
   const warningAudioRef = useRef<AudioContext | null>(null);
+  const misfireAudioRef = useRef<AudioContext | null>(null);
   const lastWarningSecondRef = useRef<string | null>(null);
   const removedPlayerRef = useRef(false);
 
@@ -470,12 +471,52 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   useEffect(() => {
     if (!misfiredControl) return;
     const timeout = window.setTimeout(() => setMisfiredControl(null), 320);
+
+    // Play "uh-uhh" error sound — two descending tones.
+    if (typeof window !== 'undefined') {
+      const AudioContextClass = window.AudioContext || (window as typeof window & {
+        webkitAudioContext?: typeof AudioContext;
+      }).webkitAudioContext;
+      if (AudioContextClass) {
+        const ctx = misfireAudioRef.current ?? new AudioContextClass();
+        misfireAudioRef.current = ctx;
+        if (ctx.state === 'suspended') void ctx.resume();
+
+        const t = ctx.currentTime;
+        const gain = ctx.createGain();
+        gain.connect(ctx.destination);
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.12, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+
+        // First tone — higher pitch
+        const osc1 = ctx.createOscillator();
+        osc1.type = 'square';
+        osc1.frequency.setValueAtTime(440, t);
+        osc1.frequency.exponentialRampToValueAtTime(380, t + 0.12);
+        osc1.connect(gain);
+        osc1.start(t);
+        osc1.stop(t + 0.14);
+
+        // Second tone — lower pitch, slight pause
+        const osc2 = ctx.createOscillator();
+        osc2.type = 'square';
+        osc2.frequency.setValueAtTime(330, t + 0.18);
+        osc2.frequency.exponentialRampToValueAtTime(220, t + 0.38);
+        osc2.connect(gain);
+        osc2.start(t + 0.18);
+        osc2.stop(t + 0.4);
+      }
+    }
+
     return () => window.clearTimeout(timeout);
   }, [misfiredControl]);
 
   useEffect(() => () => {
     void successAudioRef.current?.close();
     successAudioRef.current = null;
+    void misfireAudioRef.current?.close();
+    misfireAudioRef.current = null;
     void warningAudioRef.current?.close();
     warningAudioRef.current = null;
   }, []);
