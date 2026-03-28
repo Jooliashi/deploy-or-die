@@ -156,6 +156,11 @@ export class MockMultiplayerAdapter implements MultiplayerAdapter {
     this.#emit();
   }
 
+  debugAdjustValuation(_delta: number) {}
+  debugResetTimer() {}
+  debugForcePrompt(_label: string | null, _playerId: string) {}
+  debugGetLockedControl() { return null; }
+
   subscribe(listener: (state: SharedRoomState) => void) {
     this.#listeners.add(listener);
     listener(this.#state);

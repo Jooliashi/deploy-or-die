@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DebugMenu } from '@/components/debug-menu';
 import { DemoControlPicker } from '@/components/demo-control-picker';
 import { hasMiniGame, MiniGamePanel } from '@/components/minigames';
 import { Sparkline } from '@/components/sparkline';
@@ -425,6 +426,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const [activeMiniGamePrompt, setActiveMiniGamePrompt] = useState<PromptDefinition | null>(null);
   const [minigameSuccess, setMinigameSuccess] = useState(false);
   const [misfiredControl, setMisfiredControl] = useState<string | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
   const [now, setNow] = useState(Date.now());
   const subcontrolStageRef = useRef<HTMLElement>(null);
   const minigameStageRef = useRef<HTMLElement>(null);
@@ -438,7 +440,13 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   // game start). In demo, use the user's chosen set. Falls back to empty.
   const stateControls = state?.players.find(p => p.id === playerId)?.controls ?? [];
   const levelConfig = getLevelConfig(state?.deploy.currentLevel ?? 1);
-  const controls = (stateControls.length > 0 ? stateControls : (demoControls ?? [])).slice(0, levelConfig.buttonCount);
+  const baseControls = (stateControls.length > 0 ? stateControls : (demoControls ?? [])).slice(0, levelConfig.buttonCount);
+
+  // If a debug prompt is locked, ensure its control is visible in the buttons.
+  const debugLockedControl = adapter?.debugGetLockedControl() ?? null;
+  const controls = debugLockedControl && !baseControls.includes(debugLockedControl)
+    ? [...baseControls, debugLockedControl]
+    : baseControls;
   const openControlDefinition = openSubControl ? getControlDefinition(openSubControl) : undefined;
 
   // Async load for multiplayer rooms.
@@ -467,6 +475,22 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
+
+  // Toggle debug menu with Ctrl+D / Cmd+D (demo mode only).
+  useEffect(() => {
+    if (!isDemo) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault();
+        setShowDebug(prev => !prev);
+      }
+      if (e.key === 'Escape' && showDebug) {
+        setShowDebug(false);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [isDemo, showDebug]);
 
   useEffect(() => {
     if (!misfiredControl) return;
@@ -1126,6 +1150,15 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
           </div>
         ) : null}
       </div>
+
+      {showDebug && isDemo && adapter && state && (
+        <DebugMenu
+          adapter={adapter}
+          state={state}
+          playerId={playerId}
+          onClose={() => setShowDebug(false)}
+        />
+      )}
     </main>
   );
 }

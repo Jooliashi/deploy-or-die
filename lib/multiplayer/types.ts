@@ -25,6 +25,12 @@ export interface MultiplayerAdapter {
   failPrompt(promptId: string): void;
   misfireControl(playerId: string, controlLabel: string): void;
   subscribe(listener: (state: SharedRoomState) => void): () => void;
+  // Debug methods (only used in demo/dev)
+  debugAdjustValuation(delta: number): void;
+  debugResetTimer(): void;
+  debugForcePrompt(label: string | null, playerId: string): void;
+  /** Returns the actionLabel of the debug-locked prompt, or null. */
+  debugGetLockedControl(): string | null;
 }
 
 export interface ClaimedPrompt extends PromptDefinition {

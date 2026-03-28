@@ -3339,6 +3339,221 @@ button {
   color: var(--success);
 }
 
+/* ── Debug Menu ────────────────────────────────────────────── */
+
+.debug-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  animation: backdrop-fade 0.15s ease both;
+}
+
+.debug-panel {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  background: #131720;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 20px;
+  display: grid;
+  gap: 20px;
+}
+
+.debug-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.debug-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.debug-close {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  padding: 4px 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.debug-section {
+  display: grid;
+  gap: 8px;
+}
+
+.debug-section-title {
+  margin: 0;
+  font-size: 13px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.debug-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.debug-btn {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  padding: 8px 14px;
+  font-family: var(--mono);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.debug-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.debug-btn-success {
+  border-color: rgba(76, 229, 159, 0.3);
+  color: #4ce59f;
+}
+
+.debug-btn-success:hover {
+  background: rgba(76, 229, 159, 0.1);
+}
+
+.debug-btn-danger {
+  border-color: rgba(255, 107, 107, 0.3);
+  color: #ff6b6b;
+}
+
+.debug-btn-danger:hover {
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.debug-info {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.debug-task-list {
+  display: grid;
+  gap: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.debug-task-group {
+  display: grid;
+}
+
+.debug-task-control {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.12s ease;
+}
+
+.debug-task-control:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.debug-task-expanded {
+  border-radius: 8px 8px 0 0;
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.debug-task-count {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.debug-task-prompts {
+  display: grid;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.debug-task-prompt {
+  appearance: none;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 6px 10px;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.debug-task-prompt:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+
+.debug-task-active {
+  background: rgba(79, 137, 255, 0.12);
+  color: var(--accent);
+}
+
+.debug-task-active:hover {
+  background: rgba(79, 137, 255, 0.18);
+}
+
+.debug-active-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.debug-locked-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(79, 137, 255, 0.15);
+  color: var(--accent);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  vertical-align: middle;
+}
+
 /* ── Demo Control Picker ───────────────────────────────────── */
 
 .picker-content {

@@ -112,6 +112,8 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
   #progressionInProgress = false;
   /** The owning Group for this room (for creating CoValues with correct access). */
   #ownerGroup: Group | undefined;
+  /** When set, normal spawning is paused — only this debug prompt is active. */
+  #debugLockedPrompt: string | null = null;
 
   constructor(room: LoadedJazzRoom, options?: {
     playerControls?: string[];
@@ -224,11 +226,16 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
   resolvePrompt(promptId: string): void {
     const prompt = this.#room.deploy.prompts.find(p => p.promptId === promptId);
     if (prompt) {
+      const assignedTo = prompt.assignedTo;
       prompt.$jazz.set('status', 'resolved');
       this.#room.deploy.$jazz.set('consecutiveFailures', 0);
       this.#adjustValuation(RESOLVE_VALUATION_DELTA);
       if (this.#isHost && this.#room.deploy.levelPhase === 'playing') {
-        // Immediately activate the next queued prompt so there's zero gap.
+        // If a debug prompt is locked, respawn it immediately.
+        if (this.#debugLockedPrompt) {
+          this.debugForcePrompt(this.#debugLockedPrompt, assignedTo);
+          return;
+        }
         this.#activateNextPrompts();
         this.#spawnIfNeeded();
       }
@@ -238,10 +245,15 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
   failPrompt(promptId: string): void {
     const prompt = this.#room.deploy.prompts.find(p => p.promptId === promptId);
     if (prompt) {
+      const assignedTo = prompt.assignedTo;
       prompt.$jazz.set('status', 'failed');
       this.#recordFailure();
       this.#adjustValuation(FAIL_VALUATION_DELTA);
       if (this.#isHost && this.#room.deploy.levelPhase === 'playing') {
+        if (this.#debugLockedPrompt) {
+          this.debugForcePrompt(this.#debugLockedPrompt, assignedTo);
+          return;
+        }
         this.#activateNextPrompts();
         this.#spawnIfNeeded();
       }
@@ -260,6 +272,64 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     this.#listeners.add(listener);
     listener(coRoomToState(this.#room));
     return () => { this.#listeners.delete(listener); };
+  }
+
+  // ── Debug methods ────────────────────────────────────────
+
+  debugGetLockedControl(): string | null {
+    if (!this.#debugLockedPrompt) return null;
+    const template = promptPool.find(t => t.label === this.#debugLockedPrompt);
+    return template?.actionLabel ?? null;
+  }
+
+  debugAdjustValuation(delta: number): void {
+    this.#adjustValuation(delta);
+  }
+
+  debugResetTimer(): void {
+    const config = getLevelConfig(this.#room.deploy.currentLevel);
+    this.#room.deploy.$jazz.set('timeRemainingSeconds', config.durationSeconds);
+  }
+
+  debugForcePrompt(label: string | null, playerId: string): void {
+    // Dismiss all current live prompts for this player without penalty.
+    for (let i = 0; i < this.#room.deploy.prompts.length; i++) {
+      const p = this.#room.deploy.prompts[i];
+      if (p.assignedTo === playerId && (p.status === 'queued' || p.status === 'active')) {
+        p.$jazz.set('status', 'resolved');
+      }
+    }
+
+    if (!label) {
+      // Unlock — resume normal spawning.
+      this.#debugLockedPrompt = null;
+      this.#spawnIfNeeded();
+      this.#activateNextPrompts();
+      this.#emit();
+      return;
+    }
+
+    const template = promptPool.find(t => t.label === label);
+    if (!template) return;
+
+    this.#debugLockedPrompt = label;
+
+    promptCounter += 1;
+    this.#room.deploy.prompts.$jazz.push({
+      promptId: `prompt-${Date.now()}-${promptCounter}`,
+      label: template.label,
+      ownerRole: template.ownerRole,
+      actionLabel: template.actionLabel,
+      selectionLabel: template.selectionLabel,
+      miniGameId: template.miniGameId,
+      timerSeconds: template.timerSeconds,
+      status: 'queued',
+      createdAt: Date.now(),
+      assignedTo: playerId,
+    });
+
+    // Force immediate state broadcast so the UI updates right away.
+    this.#emit();
   }
 
   dispose(): void {
@@ -297,8 +367,9 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     for (let i = 0; i < this.#room.deploy.prompts.length; i++) {
       const p = this.#room.deploy.prompts[i];
       if (p.status !== 'queued' && p.status !== 'active') continue;
-      // Only expire prompts that have been activated (createdAt > 0).
       if (p.createdAt === 0) continue;
+      // Don't expire the debug-locked prompt.
+      if (this.#debugLockedPrompt && p.label === this.#debugLockedPrompt) continue;
       const elapsed = (now - p.createdAt) / 1000;
       if (elapsed >= p.timerSeconds) {
         p.$jazz.set('status', 'expired');
@@ -342,6 +413,8 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
    *  (not yet started). The tick activates the next one when a player has no
    *  active prompt. This means the next task appears instantly. */
   #spawnIfNeeded(): void {
+    // When a debug prompt is locked, don't spawn anything new.
+    if (this.#debugLockedPrompt) return;
     const players = this.#room.players;
     if (players.length === 0) return;
 
