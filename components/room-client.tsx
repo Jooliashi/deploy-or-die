@@ -727,6 +727,10 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
                       {promptGlyph[prompt.status]}
                     </div>
                     <div className="prompt-meta">
+                      <div className="prompt-control-target">
+                        <span className="prompt-control-kicker">Control</span>
+                        <strong className="prompt-control-name">{prompt.actionLabel}</strong>
+                      </div>
                       <span className={`prompt-timer${urgent ? ' timer-urgent' : ''}`}>
                         {remaining}s
                       </span>
