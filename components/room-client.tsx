@@ -431,6 +431,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const [openSubControl, setOpenSubControl] = useState<string | null>(null);
   const [misfiredControl, setMisfiredControl] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
+  const subcontrolStageRef = useRef<HTMLElement>(null);
 
   // Derive role and controls unconditionally (before any early returns) to
   // satisfy the Rules of Hooks.
@@ -441,6 +442,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     () => getPlayerControls(currentRole),
     [currentRole],
   );
+  const openControlDefinition = openSubControl ? getControlDefinition(openSubControl) : undefined;
 
   // Async load for multiplayer rooms.
   useEffect(() => {
@@ -493,6 +495,12 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     return () => window.removeEventListener('keydown', handleKey);
   }, [closeSubControls]);
 
+  const handleSubcontrolBackdropClick = useCallback((e: React.MouseEvent) => {
+    if (subcontrolStageRef.current && !subcontrolStageRef.current.contains(e.target as Node)) {
+      closeSubControls();
+    }
+  }, [closeSubControls]);
+
   // ── Render gates (no hooks below this point) ──────────────
 
   // Loading / error state.
@@ -543,6 +551,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const myAlerts = startedPrompts
     .filter(p => p.assignedTo === playerId)
     .slice(0, MAX_VISIBLE_ALERTS);
+  const activeAlert = myAlerts[0] ?? null;
 
   // Buttons respond to any started prompt whose actionLabel matches the
   // player's controls, regardless of who the alert was assigned to.
@@ -622,8 +631,9 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
 
       <div className="station-body stack">
         <section className="prompt-overlay">
-          {myAlerts.length > 0 ? (
-            myAlerts.map(prompt => {
+          {activeAlert ? (
+            (() => {
+              const prompt = activeAlert;
               const remaining = Math.max(
                 0,
                 prompt.timerSeconds - Math.floor((now - prompt.createdAt) / 1000),
@@ -634,6 +644,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
                 <div
                   className={[
                     'prompt-banner',
+                    'prompt-banner-full',
                     openSubControl === prompt.actionLabel ? 'active' : '',
                     urgent ? 'urgent' : '',
                   ].filter(Boolean).join(' ')}
@@ -659,9 +670,9 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
                   </div>
                 </div>
               );
-            })
+            })()
           ) : (
-            <div className="prompt-banner prompt-empty">
+            <div className="prompt-banner prompt-banner-full prompt-empty">
               <div className="prompt-topline">
                 <div className="prompt-icon status-queued">...</div>
                 <div className="prompt-meta">
@@ -678,8 +689,6 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
             {controls.map(control => {
               const prompt = actionablePrompts.find(p => p.actionLabel === control);
               const controlDef = getControlDefinition(control);
-              const subControlKeys = controlDef ? Object.keys(controlDef.subControls) : [];
-              const isExpanded = openSubControl === control;
               const hasPrompt = !!prompt;
               const skin = getControlSkin(control);
 
@@ -688,7 +697,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
                   className={[
                     'panel-muted button-card',
                     `button-card-${role.id}`,
-                    isExpanded ? 'active' : '',
+                    openSubControl === control ? 'active' : '',
                     misfiredControl === control ? 'misfired' : '',
                   ].filter(Boolean).join(' ')}
                   key={control}
@@ -714,45 +723,60 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
                   >
                     <ControlFace skin={skin} label={compactLabel(control)} hasPrompt={hasPrompt} />
                   </button>
-                  {isExpanded ? (
-                    <div className="subcontrol-list">
-                      {subControlKeys.map(subControlKey => {
-                        const subLabel = formatSubControlLabel(subControlKey);
-                        const isMatch = prompt?.selectionLabel === subLabel;
-
-                        return (
-                          <button
-                            className={`subcontrol-button${isMatch ? ' match' : ''}`}
-                            key={subControlKey}
-                            onClick={() => {
-                              if (!prompt) {
-                                adapter.misfireControl(playerId, control);
-                                setMisfiredControl(control);
-                                setOpenSubControl(null);
-                                return;
-                              }
-
-                              if (prompt.selectionLabel === subLabel) {
-                                adapter.resolvePrompt(prompt.id);
-                              } else {
-                                adapter.misfireControl(playerId, `${control}:${subControlKey}`);
-                                setMisfiredControl(control);
-                              }
-                              setOpenSubControl(null);
-                            }}
-                            type="button"
-                          >
-                            {subLabel}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : null}
                 </div>
               );
             })}
           </div>
         </section>
+
+        {openSubControl && openControlDefinition ? (
+          // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+          <div className="mini-backdrop" onClick={handleSubcontrolBackdropClick}>
+            <section className={`mini-stage mini-stage-${role.id} subcontrol-stage`} ref={subcontrolStageRef}>
+              <div>
+                <span className="eyebrow">Choose Action</span>
+                <h3 style={{ marginTop: 8 }}>{openSubControl}</h3>
+              </div>
+              <div className="subcontrol-list modal-subcontrol-list">
+                {Object.keys(openControlDefinition.subControls).map(subControlKey => {
+                  const subLabel =
+                    subControlKey === 'default' ? 'Confirm' : formatSubControlLabel(subControlKey);
+                  const prompt = actionablePrompts.find(p => p.actionLabel === openSubControl);
+                  const isMatch =
+                    subControlKey === 'default'
+                      ? !prompt?.selectionLabel
+                      : prompt?.selectionLabel === formatSubControlLabel(subControlKey);
+
+                  return (
+                    <button
+                      className="subcontrol-button"
+                      key={subControlKey}
+                      onClick={() => {
+                        if (!prompt) {
+                          adapter.misfireControl(playerId, openSubControl);
+                          setMisfiredControl(openSubControl);
+                          setOpenSubControl(null);
+                          return;
+                        }
+
+                        if (isMatch) {
+                          adapter.resolvePrompt(prompt.id);
+                        } else {
+                          adapter.misfireControl(playerId, `${openSubControl}:${subControlKey}`);
+                          setMisfiredControl(openSubControl);
+                        }
+                        setOpenSubControl(null);
+                      }}
+                      type="button"
+                    >
+                      {subLabel}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+        ) : null}
       </div>
     </main>
   );
