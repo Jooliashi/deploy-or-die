@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Sparkline } from '@/components/sparkline';
 import { WaitingRoom } from '@/components/waiting-room';
-import { getControlLabels, promptPool, roles } from '@/lib/game/data';
+import { getControlLabels, roles } from '@/lib/game/data';
 import type { ControlDefinition } from '@/lib/game/types';
 import {
   createJazzRoom,
@@ -398,28 +398,17 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const demoRoleId = isDemo ? roles[0].id : undefined;
 
   // Compute the 6 display controls once (stable across renders). In demo
-  // mode this is computed eagerly so the adapter can use the same set.
+  // mode this is also used for spawn filtering so buttons and prompts match.
   const demoControls = useMemo(
     () => (demoRoleId ? getPlayerControls(demoRoleId) : undefined),
     [demoRoleId],
   );
 
-  // Playable subset of the display controls — only those with prompts in
-  // the pool. Derived from the SAME set so buttons and prompts always match.
-  const demoPlayableControls = useMemo(
-    () => {
-      if (!demoControls) return undefined;
-      const playableSet = new Set(promptPool.map(t => t.actionLabel));
-      return demoControls.filter(c => playableSet.has(c));
-    },
-    [demoControls],
-  );
-
   const [adapter, setAdapter] = useState<MultiplayerAdapter | null>(() => {
     if (isDemo) {
-      const { room } = createJazzRoom({ roomCode, isDemo: true, playerControls: demoPlayableControls });
+      const { room } = createJazzRoom({ roomCode, isDemo: true, playerControls: demoControls });
       const a = new JazzMultiplayerAdapter(room, {
-        playerControls: demoPlayableControls,
+        playerControls: demoControls,
         isHost: true, // demo is always host
       });
       adapterRef.current = a;
