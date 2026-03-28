@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DebugMenu } from '@/components/debug-menu';
-import { DemoControlPicker } from '@/components/demo-control-picker';
 import { hasMiniGame, MiniGamePanel } from '@/components/minigames';
 import { Sparkline } from '@/components/sparkline';
 import { WaitingRoom } from '@/components/waiting-room';
@@ -11,6 +10,7 @@ import type { ControlDefinition, PromptDefinition } from '@/lib/game/types';
 import { Group } from 'jazz-tools';
 import {
   createJazzRoom,
+  DEMO_BUTTON_COUNT,
   DEMO_ROOM_CODE,
   JazzMultiplayerAdapter,
   loadJazzRoom,
@@ -392,31 +392,23 @@ function requiresSubControlChoice(control: ControlDefinition | undefined): boole
   return !(keys.length === 1 && keys[0] === 'default');
 }
 
+function pickRandomControls(count: number): string[] {
+  const labels = roles.flatMap(role => role.controls.map(control => control.label));
+  return [...labels].sort(() => Math.random() - 0.5).slice(0, count);
+}
+
 export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const adapterRef = useRef<JazzMultiplayerAdapter | null>(null);
   const isDemo = roomCode === DEMO_ROOM_CODE;
+  const demoControls = useMemo(
+    () => (isDemo ? pickRandomControls(DEMO_BUTTON_COUNT) : []),
+    [isDemo],
+  );
 
   // Stable unique player ID for this browser session.
   const playerId = useRef(`p_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`).current;
 
-  // In demo mode, the player picks their 5 controls before the game starts.
-  // `demoControls` is null until they confirm.
-  const [demoControls, setDemoControls] = useState<string[] | null>(null);
-
   const [adapter, setAdapter] = useState<MultiplayerAdapter | null>(null);
-
-  // Create the demo adapter once controls are chosen.
-  const startDemo = useCallback((chosenControls: string[]) => {
-    setDemoControls(chosenControls);
-    const { room, ownerGroup } = createJazzRoom({ roomCode, isDemo: true, playerControls: chosenControls });
-    const a = new JazzMultiplayerAdapter(room, {
-      playerControls: chosenControls,
-      isHost: true,
-      ownerGroup,
-    });
-    adapterRef.current = a;
-    setAdapter(a);
-  }, [roomCode]);
 
   const [loadError, setLoadError] = useState<string | null>(null);
   const [state, setState] = useState<SharedRoomState | null>(
@@ -436,11 +428,10 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const lastWarningSecondRef = useRef<string | null>(null);
   const removedPlayerRef = useRef(false);
 
-  // Get this player's controls from the shared state (assigned by host on
-  // game start). In demo, use the user's chosen set. Falls back to empty.
+  // Get this player's controls from the shared state.
   const stateControls = state?.players.find(p => p.id === playerId)?.controls ?? [];
   const levelConfig = getLevelConfig(state?.deploy.currentLevel ?? 1);
-  const baseControls = (stateControls.length > 0 ? stateControls : (demoControls ?? [])).slice(0, levelConfig.buttonCount);
+  const baseControls = isDemo ? stateControls : stateControls.slice(0, levelConfig.buttonCount);
 
   // If a debug prompt is locked, ensure its control is visible in the buttons.
   const debugLockedControl = adapter?.debugGetLockedControl() ?? null;
@@ -448,6 +439,23 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     ? [...baseControls, debugLockedControl]
     : baseControls;
   const openControlDefinition = openSubControl ? getControlDefinition(openSubControl) : undefined;
+
+  // Create the solo demo adapter immediately.
+  useEffect(() => {
+    if (!isDemo || adapter) return;
+    const { room, ownerGroup } = createJazzRoom({
+      roomCode,
+      isDemo: true,
+      playerControls: demoControls,
+    });
+    const a = new JazzMultiplayerAdapter(room, {
+      playerControls: demoControls,
+      isHost: true,
+      ownerGroup,
+    });
+    adapterRef.current = a;
+    setAdapter(a);
+  }, [adapter, demoControls, isDemo, roomCode]);
 
   // Async load for multiplayer rooms.
   useEffect(() => {
@@ -581,6 +589,12 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     setActiveMiniGamePrompt(null);
     setMinigameSuccess(false);
   }, []);
+
+  useEffect(() => {
+    closeSubControls();
+    closeMiniGame();
+  }, [closeMiniGame, closeSubControls, state?.deploy.currentLevel, state?.deploy.levelPhase]);
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') {
@@ -785,11 +799,6 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
 
   // ── Render gates (no hooks below this point) ──────────────
 
-  // Demo: show control picker before creating the adapter.
-  if (isDemo && !demoControls) {
-    return <DemoControlPicker playerName={playerName} onConfirm={startDemo} />;
-  }
-
   // Loading / error state.
   if (!adapter || !state) {
     return (
@@ -832,7 +841,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const readyCount = state.players.filter(p => p.ready).length;
   const playerCount = state.players.length;
 
-  if (state.deploy.levelPhase === 'briefing') {
+  if (!isDemo && state.deploy.levelPhase === 'briefing') {
     return (
       <main className="panel room-shell waiting-shell">
         <div className="waiting-content level-briefing-content">
@@ -929,7 +938,9 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
           <span className="eyebrow">Victory</span>
           <h1 className="game-over-title">DEPLOYED</h1>
           <p className="game-over-sub">
-            The team survived {state.deploy.currentLevel} levels and got the app into production.
+            {isDemo
+              ? 'You kept the stack alive through the full solo run and got the app into production.'
+              : `The team survived ${state.deploy.currentLevel} levels and got the app into production.`}
           </p>
           <div className="cta-row" style={{ justifyContent: 'center' }}>
             <a className="button" href="/">Back to Lobby</a>
@@ -949,7 +960,11 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
         <div className="top-bar">
           <div className="top-bar-left">
             <span className="top-name">{playerName}</span>
-            <span className="tag">level {state.deploy.currentLevel}</span>
+            {isDemo ? (
+              <span className="tag">solo • {controls.length}/{DEMO_BUTTON_COUNT} controls</span>
+            ) : (
+              <span className="tag">level {state.deploy.currentLevel}</span>
+            )}
           </div>
           <div className="top-bar-right">
             <span className="top-timer">
