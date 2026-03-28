@@ -269,9 +269,13 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
       const needed = QUEUE_DEPTH - pipeline.length;
       if (needed <= 0) continue;
 
+      // Collect labels already in the pipeline to avoid repeats.
+      const usedLabels = new Set(pipeline.map(p => p.label));
+
       for (let d = 0; d < needed; d++) {
-        const template = this.#pickTemplate(isDemo, player.role as RoleId, rolesInGame);
+        const template = this.#pickTemplate(isDemo, player.role as RoleId, rolesInGame, usedLabels);
         if (!template) continue;
+        usedLabels.add(template.label);
 
         // createdAt = 0 means "waiting in queue, not started yet".
         // The tick will set createdAt = Date.now() when it's this prompt's turn.
@@ -292,29 +296,29 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     }
   }
 
-  /** Pick a prompt template. In demo: from player controls. In multiplayer:
-   *  from a role the player does NOT have. */
-  #pickTemplate(isDemo: boolean, playerRole: RoleId, rolesInGame: RoleId[]) {
+  /** Pick a prompt template avoiding recently used labels. Falls back to any
+   *  template if all have been used (small pools). */
+  #pickTemplate(isDemo: boolean, playerRole: RoleId, rolesInGame: RoleId[], usedLabels: Set<string>) {
+    let pool: typeof promptPool;
+
     if (isDemo) {
-      const prompts = pickRandomPrompts(1, this.#playerControls);
-      return prompts.length > 0
-        ? {
-            label: prompts[0].label,
-            ownerRole: prompts[0].ownerRole,
-            actionLabel: prompts[0].actionLabel,
-            selectionLabel: prompts[0].selectionLabel,
-            miniGameId: prompts[0].miniGameId,
-            timerSeconds: prompts[0].timerSeconds,
-          }
-        : null;
+      pool = this.#playerControls
+        ? promptPool.filter(t => this.#playerControls!.includes(t.actionLabel))
+        : promptPool;
+    } else {
+      const otherRoles = rolesInGame.filter(r => r !== playerRole);
+      const targetRole = otherRoles.length > 0
+        ? otherRoles[Math.floor(Math.random() * otherRoles.length)]
+        : rolesInGame[Math.floor(Math.random() * rolesInGame.length)];
+      pool = promptPool.filter(t => t.ownerRole === targetRole);
     }
-    const otherRoles = rolesInGame.filter(r => r !== playerRole);
-    const targetRole = otherRoles.length > 0
-      ? otherRoles[Math.floor(Math.random() * otherRoles.length)]
-      : rolesInGame[Math.floor(Math.random() * rolesInGame.length)];
-    const rp = promptPool.filter(t => t.ownerRole === targetRole);
-    if (rp.length === 0) return null;
-    return rp[Math.floor(Math.random() * rp.length)];
+
+    if (pool.length === 0) return null;
+
+    // Prefer templates whose label hasn't been used recently.
+    const fresh = pool.filter(t => !usedLabels.has(t.label));
+    const candidates = fresh.length > 0 ? fresh : pool;
+    return candidates[Math.floor(Math.random() * candidates.length)];
   }
 
   /** For each player, if they have no "started" prompt (createdAt > 0 and
