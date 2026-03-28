@@ -41,10 +41,10 @@ type ControlSkin =
   | 'switch'
   | 'globe'
   | 'cache'
-  | 'database'
-  | 'kv'
-  | 'blob'
-  | 'queue'
+  | 'clickhouse'
+  | 'dynamodb'
+  | 'cosmosdb'
+  | 'tinybird'
   | 'social'
   | 'reply'
   | 'vendor'
@@ -83,14 +83,14 @@ function getControlSkin(control: string): ControlSkin {
       return 'globe';
     case 'Cache':
       return 'cache';
-    case 'Clickhouse':
-      return 'database';
-    case 'Dynamodb':
-      return 'kv';
-    case 'Cosmodb':
-      return 'blob';
+    case 'ClickHouse':
+      return 'clickhouse';
+    case 'DynamoDB':
+      return 'dynamodb';
+    case 'Cosmos DB':
+      return 'cosmosdb';
     case 'Tinybird':
-      return 'queue';
+      return 'tinybird';
     case 'Social Media':
       return 'social';
     case 'Customer Ticket':
@@ -122,13 +122,13 @@ function getControlCodes(skin: ControlSkin): [string, string] {
       return ['RG', '07'];
     case 'cache':
       return ['RC', '08'];
-    case 'database':
+    case 'clickhouse':
       return ['PG', '09'];
-    case 'kv':
+    case 'dynamodb':
       return ['KV', '10'];
-    case 'blob':
+    case 'cosmosdb':
       return ['BL', '11'];
-    case 'queue':
+    case 'tinybird':
       return ['SS', '12'];
     case 'social':
       return ['TW', '13'];
@@ -232,46 +232,74 @@ function ControlFace({ skin, label, hasPrompt }: { skin: ControlSkin; label: str
           <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
         </div>
       );
-    case 'database':
+    case 'clickhouse':
       return (
-        <div className="control-face control-face-database">
-          <div className="db-stack">
-            <span />
-            <span />
-            <span className={hasPrompt ? 'active' : ''} />
-          </div>
+        <div className="control-face control-face-clickhouse">
+          <svg
+            aria-hidden="true"
+            className={`brand-mark${hasPrompt ? ' active' : ''}`}
+            viewBox="0 0 120 96"
+          >
+            <rect x="18" y="16" width="16" height="60" rx="4" fill="#F6C549" />
+            <rect x="42" y="34" width="16" height="42" rx="4" fill="#FF5E57" />
+            <rect x="66" y="34" width="16" height="42" rx="4" fill="#F6C549" />
+            <rect x="90" y="16" width="16" height="60" rx="4" fill="#FF5E57" />
+          </svg>
           <div className="face-label">{label}</div>
           <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
         </div>
       );
-    case 'kv':
+    case 'dynamodb':
       return (
-        <div className="control-face control-face-kv">
-          <div className="kv-grid">
-            <span className={hasPrompt ? 'active' : ''} />
-            <span />
-            <span />
-            <span />
-          </div>
+        <div className="control-face control-face-dynamodb">
+          <svg
+            aria-hidden="true"
+            className={`brand-mark${hasPrompt ? ' active' : ''}`}
+            viewBox="0 0 120 96"
+          >
+            <ellipse cx="60" cy="22" rx="28" ry="10" fill="#8FD3FF" opacity="0.25" stroke="#8FD3FF" strokeWidth="4" />
+            <path d="M32 22v38c0 6 12 12 28 12s28-6 28-12V22" fill="rgba(143,211,255,0.12)" stroke="#8FD3FF" strokeWidth="4" />
+            <ellipse cx="60" cy="41" rx="28" ry="10" fill="none" stroke="#8FD3FF" strokeWidth="4" />
+            <ellipse cx="60" cy="60" rx="28" ry="10" fill="none" stroke="#8FD3FF" strokeWidth="4" />
+          </svg>
           <div className="face-label">{label}</div>
           <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
         </div>
       );
-    case 'blob':
+    case 'cosmosdb':
       return (
-        <div className="control-face control-face-blob">
-          <div className="blob-shape" />
+        <div className="control-face control-face-cosmosdb">
+          <svg
+            aria-hidden="true"
+            className={`brand-mark${hasPrompt ? ' active' : ''}`}
+            viewBox="0 0 120 96"
+          >
+            <circle cx="58" cy="48" r="18" fill="#3EA8FF" />
+            <ellipse
+              cx="58"
+              cy="48"
+              rx="34"
+              ry="12"
+              fill="none"
+              stroke="#9DD8FF"
+              strokeWidth="4"
+              transform="rotate(-20 58 48)"
+            />
+            <circle cx="88" cy="22" r="4" fill="#E6F7FF" />
+            <circle cx="28" cy="70" r="3" fill="#E6F7FF" />
+          </svg>
           <div className="face-label">{label}</div>
           <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
         </div>
       );
-    case 'queue':
+    case 'tinybird':
       return (
-        <div className="control-face control-face-queue">
-          <div className="queue-lines">
-            <span />
-            <span className={hasPrompt ? 'active' : ''} />
-            <span />
+        <div className="control-face control-face-tinybird">
+          <div className={`tinybird-mark${hasPrompt ? ' active' : ''}`}>
+            <span className="tb-body" />
+            <span className="tb-wing" />
+            <span className="tb-beak" />
+            <span className="tb-eye" />
           </div>
           <div className="face-label">{label}</div>
           <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>

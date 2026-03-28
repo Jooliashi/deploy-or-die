@@ -256,11 +256,17 @@ export const promptPool: FlattenedPromptTemplate[] = roles.flatMap(role =>
 
 let promptCounter = 0;
 
-export function pickRandomPrompts(count: number, forControls?: string[]): PromptDefinition[] {
+export function pickRandomPrompts(
+  count: number,
+  forControls?: string[],
+  excludeLabels?: Iterable<string>,
+): PromptDefinition[] {
   const pool = forControls
     ? promptPool.filter(template => forControls.includes(template.actionLabel))
     : promptPool;
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  const excluded = new Set(excludeLabels);
+  const available = pool.filter(template => !excluded.has(template.label));
+  const shuffled = [...available].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count).map(template => {
     promptCounter += 1;
     return {

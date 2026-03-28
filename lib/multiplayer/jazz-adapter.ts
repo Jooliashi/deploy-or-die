@@ -316,8 +316,8 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
       const needed = QUEUE_DEPTH - pipeline.length;
       if (needed <= 0) continue;
 
-      // Collect labels already in the pipeline to avoid repeats.
-      const usedLabels = new Set(pipeline.map(p => p.label));
+      // Once a prompt label has appeared anywhere in the room, don't ask it again.
+      const usedLabels = new Set(this.#room.deploy.prompts.map(p => p.label));
 
       for (let d = 0; d < needed; d++) {
         const template = this.#pickTemplate(isDemo, playerCtrls, allPlayerControls, usedLabels);
@@ -371,10 +371,10 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
 
     if (pool.length === 0) return null;
 
-    // Prefer templates whose label hasn't been used recently.
     const fresh = pool.filter(t => !usedLabels.has(t.label));
-    const candidates = fresh.length > 0 ? fresh : pool;
-    return candidates[Math.floor(Math.random() * candidates.length)];
+    if (fresh.length === 0) return null;
+
+    return fresh[Math.floor(Math.random() * fresh.length)];
   }
 
   /** For each player, if they have no "started" prompt (createdAt > 0 and
