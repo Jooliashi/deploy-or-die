@@ -1,4 +1,4 @@
-import { demoDeployState, LEVELS } from '@/lib/game/data';
+import { demoDeployState, getLevelConfig, LEVELS } from '@/lib/game/data';
 import type { MultiplayerAdapter, SharedRoomState } from '@/lib/multiplayer/types';
 
 const initialState: SharedRoomState = {
@@ -58,18 +58,18 @@ export class MockMultiplayerAdapter implements MultiplayerAdapter {
           ...this.#state.deploy,
           currentLevel: 1,
           levelPhase: 'briefing',
-          timeRemainingSeconds: LEVELS[0].durationSeconds,
+          timeRemainingSeconds: getLevelConfig(1).durationSeconds,
         },
       };
     } else if (this.#state.gameStarted && this.#state.deploy.levelPhase === 'briefing' && allReady) {
-      const levelIndex = Math.max(0, this.#state.deploy.currentLevel - 1);
+      const config = getLevelConfig(this.#state.deploy.currentLevel);
       this.#state = {
         ...this.#state,
         players: this.#state.players.map(p => ({ ...p, ready: false })),
         deploy: {
           ...this.#state.deploy,
           levelPhase: 'playing',
-          timeRemainingSeconds: LEVELS[levelIndex].durationSeconds,
+          timeRemainingSeconds: config.durationSeconds,
         },
       };
     }
@@ -85,7 +85,7 @@ export class MockMultiplayerAdapter implements MultiplayerAdapter {
         ...this.#state.deploy,
         currentLevel: 1,
         levelPhase: 'briefing',
-        timeRemainingSeconds: LEVELS[0].durationSeconds,
+        timeRemainingSeconds: getLevelConfig(1).durationSeconds,
       },
     };
     this.#emit();

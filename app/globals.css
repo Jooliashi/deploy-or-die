@@ -2577,6 +2577,279 @@ button {
   background: rgba(168, 230, 207, 0.22);
 }
 
+/* ── Cache Knowledge minigame ───────────────────────────── */
+
+.mini-shell-cache { gap: 18px; }
+.mini-callout-cache { color: #86d9f9; }
+
+.cache-options {
+  display: grid;
+  gap: 8px;
+}
+
+.cache-option {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 12px 16px;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.cache-option:hover {
+  background: rgba(134, 217, 249, 0.1);
+  border-color: rgba(134, 217, 249, 0.3);
+}
+
+/* ── Pipeline Fixer minigame ───────────────────────────── */
+
+.mini-shell-pipeline { gap: 16px; }
+.mini-callout-pipeline { color: #ffd580; }
+
+.pipeline-stages {
+  display: grid;
+  gap: 6px;
+}
+
+.pipeline-stage {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 12px 16px;
+  color: var(--text);
+  font-size: 15px;
+  font-family: var(--mono);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.pipeline-stage:hover { background: rgba(255, 213, 128, 0.08); }
+.pipeline-stage:active { transform: scale(0.97); }
+
+.pipeline-dragging {
+  border-color: rgba(255, 213, 128, 0.5);
+  background: rgba(255, 213, 128, 0.12);
+}
+
+.pipeline-correct {
+  border-color: rgba(76, 229, 159, 0.4);
+  background: rgba(76, 229, 159, 0.08);
+}
+
+.pipeline-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pipeline-hint {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+}
+
+/* ── Pod Doctor minigame ───────────────────────────────── */
+
+.mini-shell-pod { gap: 16px; }
+.mini-callout-pod { color: #c4b5fd; }
+
+.pod-log {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  font-family: var(--mono);
+  font-size: 13px;
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+.pod-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.pod-option {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 12px;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.pod-option:hover {
+  background: rgba(196, 181, 253, 0.1);
+  border-color: rgba(196, 181, 253, 0.3);
+}
+
+/* ── Refund Rush minigame ──────────────────────────────── */
+
+.mini-shell-refund { gap: 16px; }
+.mini-callout-refund { color: #86efac; }
+
+.refund-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.refund-col { display: grid; gap: 8px; }
+
+.refund-card {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 12px;
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.refund-card:hover:not(:disabled) {
+  background: rgba(134, 239, 172, 0.08);
+  border-color: rgba(134, 239, 172, 0.3);
+}
+
+.refund-selected {
+  border-color: rgba(134, 239, 172, 0.5);
+  background: rgba(134, 239, 172, 0.12);
+}
+
+.refund-matched {
+  opacity: 0.35;
+  pointer-events: none;
+  border-color: rgba(76, 229, 159, 0.3);
+}
+
+.refund-id {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.refund-amount {
+  font-weight: 700;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Trace the Route minigame ──────────────────────────── */
+
+.mini-shell-route { gap: 16px; }
+.mini-callout-route { color: #93c5fd; }
+
+.route-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.route-col { display: grid; gap: 8px; }
+
+.route-card {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 12px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.route-card:hover:not(:disabled) {
+  background: rgba(147, 197, 253, 0.08);
+  border-color: rgba(147, 197, 253, 0.3);
+}
+
+.route-selected {
+  border-color: rgba(147, 197, 253, 0.5);
+  background: rgba(147, 197, 253, 0.12);
+}
+
+.route-matched {
+  opacity: 0.35;
+  pointer-events: none;
+  border-color: rgba(76, 229, 159, 0.3);
+}
+
+/* ── Traffic Filter minigame ───────────────────────────── */
+
+.mini-shell-traffic { gap: 14px; }
+.mini-callout-traffic { color: #fca5a5; }
+
+.traffic-score {
+  display: flex;
+  gap: 16px;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.traffic-good { color: var(--success); }
+.traffic-bad { color: var(--danger); }
+
+.traffic-feed {
+  display: grid;
+  gap: 6px;
+}
+
+.traffic-req {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--mono);
+  text-align: left;
+  color: var(--text);
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+  animation: traffic-slide 0.3s ease both;
+}
+
+@keyframes traffic-slide {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.traffic-req:hover {
+  transform: scale(0.98);
+}
+
+.traffic-mal {
+  background: rgba(255, 107, 107, 0.06);
+  border-color: rgba(255, 107, 107, 0.2);
+}
+
+.traffic-legit {
+  background: rgba(76, 229, 159, 0.04);
+  border-color: rgba(76, 229, 159, 0.15);
+}
+
 .mini-shell-placeholder {
   gap: 18px;
 }

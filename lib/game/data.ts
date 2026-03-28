@@ -14,11 +14,24 @@ interface FlattenedPromptTemplate extends PromptTemplateDefinition {
   miniGameId: PromptDefinition['miniGameId'];
 }
 
+/** Predefined levels. After these, levels are generated infinitely with
+ *  escalating difficulty (more buttons, shorter timers). */
 export const LEVELS = [
-  { level: 1, buttonCount: 3, durationSeconds: 60 },
+  { level: 1, buttonCount: 3, durationSeconds: 120 },
   { level: 2, buttonCount: 4, durationSeconds: 120 },
-  { level: 3, buttonCount: 5, durationSeconds: 180 },
-] as const;
+  { level: 3, buttonCount: 5, durationSeconds: 120 },
+];
+
+/** Generate a level config for any level number. Uses predefined levels for
+ *  1-3, then scales difficulty infinitely beyond that. */
+export function getLevelConfig(level: number): { level: number; buttonCount: number; durationSeconds: number } {
+  if (level <= LEVELS.length) {
+    return LEVELS[level - 1];
+  }
+  // Beyond predefined levels: keep adding buttons (max 8) and keep duration at 120s.
+  const buttonCount = Math.min(3 + level - 1, 8);
+  return { level, buttonCount, durationSeconds: 120 };
+}
 
 function formatSubControlLabel(key: string): string {
   return key
@@ -235,6 +248,128 @@ export const roles: RoleDefinition[] = [
           default: [
             { label: 'Someone on the team needs a new laptop before the next deploy', timerSeconds: 16 },
             { label: 'A teammate requested admin access on their workstation', timerSeconds: 18 },
+          ],
+        },
+      },
+    ],
+  },
+  {
+    id: 'infra',
+    name: 'Infrastructure',
+    summary: 'Owns Kubernetes, networking, pipelines, and load balancing.',
+    controls: [
+      {
+        label: 'Kubernetes',
+        // Mini-game idea: "pod doctor" — drag env vars into a pod spec to fix it
+        miniGameId: 'pod-doctor',
+        subControls: {
+          restartPod: [
+            { label: 'A pod is stuck in CrashLoopBackOff because an environment variable is missing', timerSeconds: 18 },
+            { label: 'The liveness probe is failing and the pod keeps getting killed', timerSeconds: 16 },
+          ],
+          scaleUp: [
+            { label: 'The service is overloaded because autoscaling is not configured', timerSeconds: 20 },
+            { label: 'CPU usage is at 98% and new pods are not being scheduled', timerSeconds: 17 },
+          ],
+          drainNode: [
+            { label: 'A node is running out of memory and needs to be drained', timerSeconds: 15 },
+          ],
+          rollback: [
+            { label: 'The latest deployment rolled out a broken image tag', timerSeconds: 16 },
+          ],
+        },
+      },
+      {
+        label: 'Networking',
+        // Mini-game idea: "trace the route" — wire domain names to IPs
+        miniGameId: 'trace-the-route',
+        subControls: {
+          fixDNS: [
+            { label: 'DNS propagation is stuck and the new domain is not resolving', timerSeconds: 19 },
+            { label: 'A wildcard record is routing all subdomains to the wrong origin', timerSeconds: 16 },
+          ],
+          fixLoadBalancer: [
+            { label: 'One origin server is receiving 95% of all traffic', timerSeconds: 16 },
+            { label: 'The load balancer health check is failing for the primary region', timerSeconds: 18 },
+          ],
+          fixCertificate: [
+            { label: 'The TLS certificate expired and the site is showing a security warning', timerSeconds: 14 },
+          ],
+        },
+      },
+      {
+        label: 'CI/CD Pipeline',
+        // Mini-game idea: "pipeline fixer" — reorder shuffled pipeline stages
+        miniGameId: 'pipeline-fixer',
+        subControls: {
+          default: [
+            { label: 'The deploy pipeline has been stuck in a rollback loop for 30 minutes', timerSeconds: 18 },
+            { label: 'A flaky test is blocking the entire release queue', timerSeconds: 15 },
+            { label: 'The build cache got corrupted and every build is starting from scratch', timerSeconds: 17 },
+          ],
+        },
+      },
+    ],
+  },
+  {
+    id: 'billing',
+    name: 'Billing',
+    summary: 'Owns payments, subscriptions, invoicing, and financial incidents.',
+    controls: [
+      {
+        label: 'Billing',
+        // Mini-game idea: "refund rush" — match invoices to correct refund amounts
+        miniGameId: 'refund-rush',
+        subControls: {
+          issueRefund: [
+            { label: 'A bug accidentally charged every customer $1 million', timerSeconds: 14 },
+            { label: 'Duplicate charges went out to all pro-tier subscribers', timerSeconds: 16 },
+          ],
+          fixSubscription: [
+            { label: 'Hundreds of customers are being downgraded to the free tier', timerSeconds: 17 },
+            { label: 'The trial expiration job ran twice and locked out paying customers', timerSeconds: 15 },
+          ],
+          regenerateInvoice: [
+            { label: 'Last month\'s invoices all show the wrong tax amount', timerSeconds: 18 },
+            { label: 'A batch of enterprise invoices never got delivered', timerSeconds: 16 },
+          ],
+          handleChargeback: [
+            { label: 'A wave of credit card chargebacks just came in from the payment processor', timerSeconds: 15 },
+            { label: 'The chargeback rate spiked above 1% and the processor is threatening to cut us off', timerSeconds: 18 },
+          ],
+        },
+      },
+    ],
+  },
+  {
+    id: 'security',
+    name: 'Security',
+    summary: 'Owns threat detection, access control, DDoS mitigation, and incident response.',
+    controls: [
+      {
+        label: 'Security',
+        // Mini-game idea: "traffic filter" — tap red (malicious) requests,
+        // let green (legitimate) ones through
+        miniGameId: 'traffic-filter',
+        subControls: {
+          blockDDoS: [
+            { label: 'A massive DDoS attack is flooding the API with 50k requests per second', timerSeconds: 14 },
+            { label: 'A botnet from a single region is hammering the login endpoint', timerSeconds: 16 },
+          ],
+          stopBots: [
+            { label: 'Bots are scraping the entire product catalog at 1000 pages per minute', timerSeconds: 18 },
+            { label: 'Automated signups are creating thousands of spam accounts', timerSeconds: 16 },
+          ],
+          revokeAccess: [
+            { label: 'A leaked API key with admin privileges is being used from an unknown IP', timerSeconds: 14 },
+            { label: 'An ex-employee\'s access token was never revoked and is still active', timerSeconds: 16 },
+          ],
+          patchVulnerability: [
+            { label: 'SQL injection attempts are bypassing the current firewall rules', timerSeconds: 16 },
+            { label: 'A zero-day exploit is being actively used against the auth endpoint', timerSeconds: 14 },
+          ],
+          rotateSecrets: [
+            { label: 'All production secrets need to be rotated after a credential exposure', timerSeconds: 18 },
           ],
         },
       },

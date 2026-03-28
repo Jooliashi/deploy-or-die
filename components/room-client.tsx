@@ -5,7 +5,7 @@ import { DemoControlPicker } from '@/components/demo-control-picker';
 import { hasMiniGame, MiniGamePanel } from '@/components/minigames';
 import { Sparkline } from '@/components/sparkline';
 import { WaitingRoom } from '@/components/waiting-room';
-import { LEVELS, roles } from '@/lib/game/data';
+import { getLevelConfig, roles } from '@/lib/game/data';
 import type { ControlDefinition, PromptDefinition } from '@/lib/game/types';
 import { Group } from 'jazz-tools';
 import {
@@ -436,7 +436,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   // Get this player's controls from the shared state (assigned by host on
   // game start). In demo, use the user's chosen set. Falls back to empty.
   const stateControls = state?.players.find(p => p.id === playerId)?.controls ?? [];
-  const levelConfig = state ? LEVELS[Math.max(0, Math.min(state.deploy.currentLevel - 1, LEVELS.length - 1))] : LEVELS[0];
+  const levelConfig = getLevelConfig(state?.deploy.currentLevel ?? 1);
   const controls = (stateControls.length > 0 ? stateControls : (demoControls ?? [])).slice(0, levelConfig.buttonCount);
   const openControlDefinition = openSubControl ? getControlDefinition(openSubControl) : undefined;
 
@@ -616,6 +616,53 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
 
     return () => window.clearTimeout(timeout);
   }, [activeMiniGamePrompt, adapter, closeMiniGame, minigameSuccess]);
+
+  // Play a sound when a level is completed (phase transitions from 'playing' to 'briefing').
+  const levelCompleteAudioRef = useRef<AudioContext | null>(null);
+  const prevLevelPhaseRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const currentPhase = state?.deploy.levelPhase ?? null;
+    const prevPhase = prevLevelPhaseRef.current;
+    prevLevelPhaseRef.current = currentPhase;
+
+    // Detect transition: was playing, now briefing (level survived).
+    if (prevPhase === 'playing' && currentPhase === 'briefing' && typeof window !== 'undefined') {
+      const AudioContextClass = window.AudioContext || (window as typeof window & {
+        webkitAudioContext?: typeof AudioContext;
+      }).webkitAudioContext;
+      if (!AudioContextClass) return;
+
+      const ctx = levelCompleteAudioRef.current ?? new AudioContextClass();
+      levelCompleteAudioRef.current = ctx;
+      if (ctx.state === 'suspended') void ctx.resume();
+
+      const t = ctx.currentTime;
+      const gain = ctx.createGain();
+      gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.14, t + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+
+      // Ascending fanfare — 5 notes, slightly different from the 3-note success chime.
+      const notes = [
+        { freq: 440, start: 0 },       // A4
+        { freq: 554.37, start: 0.08 },  // C#5
+        { freq: 659.25, start: 0.16 },  // E5
+        { freq: 880, start: 0.28 },     // A5
+        { freq: 1108.73, start: 0.38 }, // C#6
+      ];
+
+      notes.forEach(note => {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(note.freq, t + note.start);
+        osc.connect(gain);
+        osc.start(t + note.start);
+        osc.stop(t + note.start + 0.18);
+      });
+    }
+  }, [state?.deploy.levelPhase]);
 
   const warningPrompt = state?.gameStarted
     ? state.deploy.prompts
@@ -817,7 +864,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
           <span className="eyebrow">Victory</span>
           <h1 className="game-over-title">DEPLOYED</h1>
           <p className="game-over-sub">
-            The team survived all {LEVELS.length} levels and got the app into production.
+            The team survived {state.deploy.currentLevel} levels and got the app into production.
           </p>
           <div className="cta-row" style={{ justifyContent: 'center' }}>
             <a className="button" href="/">Back to Lobby</a>
