@@ -173,21 +173,21 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
 
   startGame(): void {
     if (this.#isHost) {
-      this.#distributeControls();
       this.#setLevelBriefing(1);
     }
     this.#room.$jazz.set('gameStarted', true);
   }
 
-  /** Distribute controls evenly across all players. Each player gets
-   *  CONTROLS_PER_PLAYER controls. Controls are shuffled and dealt round-robin
-   *  so no two players share the same control (as much as possible). */
-  #distributeControls(): void {
+  /** Deal a fresh randomized control set for the current level. */
+  #distributeControls(count: number): void {
     const players = this.#room.players;
     if (players.length === 0) return;
 
-    const shuffled = [...ALL_CONTROL_LABELS].sort(() => Math.random() - 0.5);
-    const totalNeeded = players.length * CONTROLS_PER_PLAYER;
+    const sourcePool = this.#playerControls && this.#playerControls.length > 0
+      ? [...this.#playerControls]
+      : [...ALL_CONTROL_LABELS];
+    const shuffled = [...sourcePool].sort(() => Math.random() - 0.5);
+    const totalNeeded = players.length * count;
 
     // If we need more controls than available, cycle through the pool.
     const pool: string[] = [];
@@ -202,7 +202,7 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
         player.controls.$jazz.splice(0, 1);
       }
       // Deal round-robin: player 0 gets indices 0,n,2n,... player 1 gets 1,n+1,2n+1,...
-      for (let ci = 0; ci < CONTROLS_PER_PLAYER; ci++) {
+      for (let ci = 0; ci < count; ci++) {
         const idx = ci * players.length + pi;
         player.controls.$jazz.push(pool[idx % pool.length]);
       }
@@ -470,6 +470,7 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
 
   #setLevelBriefing(level: number): void {
     const config = getLevelConfig(level);
+    this.#distributeControls(config.buttonCount);
     this.#clearPrompts();
     this.#room.deploy.$jazz.set('currentLevel', config.level);
     this.#room.deploy.$jazz.set('levelPhase', 'briefing');
@@ -509,7 +510,6 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     if (!allReady) return;
 
     if (!this.#room.gameStarted) {
-      this.#distributeControls();
       this.#setLevelBriefing(1);
       this.#room.$jazz.set('gameStarted', true);
       return;

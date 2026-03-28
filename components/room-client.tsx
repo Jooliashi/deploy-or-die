@@ -398,7 +398,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   // Stable unique player ID for this browser session.
   const playerId = useRef(`p_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`).current;
 
-  // In demo mode, the player picks their 6 controls before the game starts.
+  // In demo mode, the player picks their 5 controls before the game starts.
   // `demoControls` is null until they confirm.
   const [demoControls, setDemoControls] = useState<string[] | null>(null);
 
@@ -437,7 +437,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   // game start). In demo, use the user's chosen set. Falls back to empty.
   const stateControls = state?.players.find(p => p.id === playerId)?.controls ?? [];
   const levelConfig = state ? LEVELS[Math.max(0, Math.min(state.deploy.currentLevel - 1, LEVELS.length - 1))] : LEVELS[0];
-  const controls = (demoControls ?? (stateControls.length > 0 ? stateControls : [])).slice(0, levelConfig.buttonCount);
+  const controls = (stateControls.length > 0 ? stateControls : (demoControls ?? [])).slice(0, levelConfig.buttonCount);
   const openControlDefinition = openSubControl ? getControlDefinition(openSubControl) : undefined;
 
   // Async load for multiplayer rooms.
