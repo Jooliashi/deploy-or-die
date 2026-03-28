@@ -971,35 +971,32 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
               const skin = getControlSkin(control);
 
               return (
-                <div
+                <button
                   className={[
-                    'panel-muted button-card',
+                    `control-button control-skin-${skin}`,
+                    hasPrompt ? 'ready' : '',
                     openSubControl === control ? 'active' : '',
                     misfiredControl === control ? 'misfired' : '',
                   ].filter(Boolean).join(' ')}
                   key={control}
+                  onClick={() => {
+                    if (!prompt) {
+                      adapter.misfireControl(playerId, control);
+                      setMisfiredControl(control);
+                      return;
+                    }
+
+                    if (requiresSubControlChoice(controlDef)) {
+                      setOpenSubControl(current => (current === control ? null : control));
+                      return;
+                    }
+
+                    launchMiniGame(prompt);
+                  }}
+                  type="button"
                 >
-                  <button
-                    className={`control-button control-skin-${skin}${hasPrompt ? ' ready' : ''}`}
-                    onClick={() => {
-                      if (!prompt) {
-                        adapter.misfireControl(playerId, control);
-                        setMisfiredControl(control);
-                        return;
-                      }
-
-                      if (requiresSubControlChoice(controlDef)) {
-                        setOpenSubControl(current => (current === control ? null : control));
-                        return;
-                      }
-
-                      launchMiniGame(prompt);
-                    }}
-                    type="button"
-                  >
-                    <ControlFace skin={skin} label={compactLabel(control)} hasPrompt={hasPrompt} />
-                  </button>
-                </div>
+                  <ControlFace skin={skin} label={compactLabel(control)} hasPrompt={hasPrompt} />
+                </button>
               );
             })}
           </div>
