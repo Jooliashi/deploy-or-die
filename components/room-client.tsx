@@ -367,12 +367,13 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
 
   const demoRoleId = isDemo ? roles[0].id : undefined;
 
-  // Compute the 6 display controls once (stable across renders). In demo
-  // mode this is also used for spawn filtering so buttons and prompts match.
-  const demoControls = useMemo(
-    () => (demoRoleId ? getPlayerControls(demoRoleId) : undefined),
-    [demoRoleId],
+  // Compute the 6 display controls exactly once via useRef (NOT useMemo which
+  // can re-run under StrictMode, producing a different random set). This
+  // ensures the adapter and the display always use the same controls.
+  const demoControlsRef = useRef<string[] | undefined>(
+    demoRoleId ? getPlayerControls(demoRoleId) : undefined,
   );
+  const demoControls = demoControlsRef.current;
 
 
   const [adapter, setAdapter] = useState<MultiplayerAdapter | null>(() => {
