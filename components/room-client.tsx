@@ -431,6 +431,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const successAudioRef = useRef<AudioContext | null>(null);
   const warningAudioRef = useRef<AudioContext | null>(null);
   const lastWarningSecondRef = useRef<string | null>(null);
+  const removedPlayerRef = useRef(false);
 
   // Get this player's controls from the shared state (assigned by host on
   // game start). In demo, use the user's chosen set. Falls back to empty.
@@ -482,11 +483,30 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   // Join the room and subscribe to state.
   useEffect(() => {
     if (!adapter) return;
+    removedPlayerRef.current = false;
     adapter.addPlayer(playerId, playerName);
     const unsubscribe = adapter.subscribe(setState);
-    return () => {
-      unsubscribe();
+
+    const removeSelf = () => {
+      if (removedPlayerRef.current) {
+        return;
+      }
+      removedPlayerRef.current = true;
       adapter.removePlayer(playerId);
+    };
+
+    const handlePageExit = () => {
+      removeSelf();
+    };
+
+    window.addEventListener('pagehide', handlePageExit);
+    window.addEventListener('beforeunload', handlePageExit);
+
+    return () => {
+      window.removeEventListener('pagehide', handlePageExit);
+      window.removeEventListener('beforeunload', handlePageExit);
+      unsubscribe();
+      removeSelf();
       adapterRef.current?.dispose();
     };
   }, [adapter, playerId, playerName]);
