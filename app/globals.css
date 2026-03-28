@@ -1860,6 +1860,140 @@ button {
   color: var(--success);
 }
 
+/* ── Demo Control Picker ───────────────────────────────────── */
+
+.picker-content {
+  width: 100%;
+  max-width: 640px;
+  display: grid;
+  gap: 24px;
+}
+
+.picker-header {
+  text-align: center;
+}
+
+.picker-title {
+  margin: 10px 0 6px;
+  font-size: clamp(24px, 5vw, 40px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.picker-sub {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.picker-counter {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--mono);
+}
+
+.picker-count {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+.picker-count-ready {
+  color: var(--success);
+}
+
+.picker-count-label {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.picker-card {
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 14px 12px;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  color: var(--text-muted);
+}
+
+.picker-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+}
+
+.picker-card:active {
+  transform: translateY(1px);
+}
+
+.picker-card-selected {
+  border-color: var(--accent);
+  background: rgba(79, 137, 255, 0.1);
+  box-shadow: 0 0 16px rgba(79, 137, 255, 0.15);
+  color: var(--text);
+}
+
+.picker-card-selected:hover {
+  background: rgba(79, 137, 255, 0.14);
+}
+
+.picker-card-disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.picker-card-disabled:hover {
+  background: rgba(255, 255, 255, 0.03);
+  transform: none;
+}
+
+.picker-card-label {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.picker-card-role {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+}
+
+.picker-launch {
+  width: 100%;
+  padding: 16px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.picker-launch.disabled {
+  opacity: 0.5;
+  cursor: default;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+
+@media (max-width: 640px) {
+  .picker-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* ── Landing Page ──────────────────────────────────────────── */
 
 .landing-wrapper {

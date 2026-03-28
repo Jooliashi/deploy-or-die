@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DemoControlPicker } from '@/components/demo-control-picker';
 import { hasMiniGame, MiniGamePanel } from '@/components/minigames';
 import { Sparkline } from '@/components/sparkline';
 import { WaitingRoom } from '@/components/waiting-room';
@@ -365,29 +366,23 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   // Stable unique player ID for this browser session.
   const playerId = useRef(`p_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`).current;
 
-  const demoRoleId = isDemo ? roles[0].id : undefined;
+  // In demo mode, the player picks their 6 controls before the game starts.
+  // `demoControls` is null until they confirm.
+  const [demoControls, setDemoControls] = useState<string[] | null>(null);
 
-  // Compute the 6 display controls exactly once via useRef (NOT useMemo which
-  // can re-run under StrictMode, producing a different random set). This
-  // ensures the adapter and the display always use the same controls.
-  const demoControlsRef = useRef<string[] | undefined>(
-    demoRoleId ? getPlayerControls(demoRoleId) : undefined,
-  );
-  const demoControls = demoControlsRef.current;
+  const [adapter, setAdapter] = useState<MultiplayerAdapter | null>(null);
 
-
-  const [adapter, setAdapter] = useState<MultiplayerAdapter | null>(() => {
-    if (isDemo) {
-      const { room } = createJazzRoom({ roomCode, isDemo: true, playerControls: demoControls });
-      const a = new JazzMultiplayerAdapter(room, {
-        playerControls: demoControls,
-        isHost: true, // demo is always host
-      });
-      adapterRef.current = a;
-      return a;
-    }
-    return null;
-  });
+  // Create the demo adapter once controls are chosen.
+  const startDemo = useCallback((chosenControls: string[]) => {
+    setDemoControls(chosenControls);
+    const { room } = createJazzRoom({ roomCode, isDemo: true, playerControls: chosenControls });
+    const a = new JazzMultiplayerAdapter(room, {
+      playerControls: chosenControls,
+      isHost: true,
+    });
+    adapterRef.current = a;
+    setAdapter(a);
+  }, [roomCode]);
 
   const [loadError, setLoadError] = useState<string | null>(null);
   const [state, setState] = useState<SharedRoomState | null>(
@@ -402,7 +397,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   // Derive role and controls unconditionally (before any early returns).
   const currentRole = state?.players.find(p => p.id === playerId)?.role ?? 'frontend';
   const role = roles.find(r => r.id === currentRole) ?? roles[0];
-  // Always show 6 buttons. In demo, use the pre-computed set; in multiplayer,
+  // Always show 6 buttons. In demo, use the user's chosen set; in multiplayer,
   // compute fresh (stable via useMemo).
   const controls = useMemo(
     () => demoControls ?? getPlayerControls(currentRole),
@@ -491,6 +486,11 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   }, [adapter]);
 
   // ── Render gates (no hooks below this point) ──────────────
+
+  // Demo: show control picker before creating the adapter.
+  if (isDemo && !demoControls) {
+    return <DemoControlPicker playerName={playerName} onConfirm={startDemo} />;
+  }
 
   // Loading / error state.
   if (!adapter || !state) {
