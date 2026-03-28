@@ -1387,121 +1387,6 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-// ---------------------------------------------------------------------------
-// Pod Doctor — pick the right env var to fix a crashing pod
-// ---------------------------------------------------------------------------
-
-const POD_SCENARIOS = [
-  { missing: 'DATABASE_URL', wrong: ['API_KEY', 'NODE_ENV', 'PORT'] },
-  { missing: 'REDIS_HOST', wrong: ['CACHE_TTL', 'LOG_LEVEL', 'TZ'] },
-  { missing: 'JWT_SECRET', wrong: ['SESSION_ID', 'HOSTNAME', 'PATH'] },
-  { missing: 'STRIPE_KEY', wrong: ['APP_NAME', 'DEBUG', 'LANG'] },
-  { missing: 'SMTP_PASSWORD', wrong: ['MAIL_FROM', 'TLS_CERT', 'USER'] },
-];
-
-function PodDoctorGame({ onResolve }: { onResolve: () => void }) {
-  const [idx, setIdx] = useState(() => Math.floor(Math.random() * POD_SCENARIOS.length));
-  const scenario = POD_SCENARIOS[idx];
-  const options = useMemo(() =>
-    [scenario.missing, ...scenario.wrong].sort(() => Math.random() - 0.5),
-    [scenario],
-  );
-
-  return (
-    <div className="mini-shell mini-shell-pod">
-      <div className="mini-callout mini-callout-pod">
-        Pod is crashing — which env var is missing?
-      </div>
-      <div className="pod-log">
-        <code>Error: Missing required environment variable <strong>{scenario.missing}</strong></code>
-      </div>
-      <div className="pod-options">
-        {options.map(opt => (
-          <button
-            key={opt}
-            className="pod-option"
-            onClick={() => {
-              if (opt === scenario.missing) { onResolve(); return; }
-              setIdx(Math.floor(Math.random() * POD_SCENARIOS.length));
-            }}
-            type="button"
-          ><code>{opt}</code></button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Refund Rush — match invoices to correct amounts
-// ---------------------------------------------------------------------------
-
-const REFUND_AMOUNTS = [
-  { invoice: 'INV-4021', charged: '$249.99', refund: '$249.99' },
-  { invoice: 'INV-4022', charged: '$99.00', refund: '$99.00' },
-  { invoice: 'INV-4023', charged: '$1,200.00', refund: '$1,200.00' },
-  { invoice: 'INV-4024', charged: '$49.95', refund: '$49.95' },
-  { invoice: 'INV-4025', charged: '$599.00', refund: '$599.00' },
-];
-
-function RefundRushGame({ onResolve }: { onResolve: () => void }) {
-  const [items] = useState(() => shuffle(REFUND_AMOUNTS).slice(0, 3));
-  const [selectedInvoice, setSelectedInvoice] = useState<number | null>(null);
-  const [shuffledRefunds] = useState(() => shuffle(items.map(i => i.refund)));
-  const [matched, setMatched] = useState<Set<number>>(new Set());
-
-  const handleRefundClick = useCallback((refund: string) => {
-    if (selectedInvoice === null) return;
-    if (items[selectedInvoice].refund === refund) {
-      const next = new Set(matched);
-      next.add(selectedInvoice);
-      setMatched(next);
-      setSelectedInvoice(null);
-      if (next.size === items.length) onResolve();
-    } else {
-      setSelectedInvoice(null);
-    }
-  }, [selectedInvoice, items, matched, onResolve]);
-
-  return (
-    <div className="mini-shell mini-shell-refund">
-      <div className="mini-callout mini-callout-refund">Match each invoice to its refund amount</div>
-      <div className="refund-columns">
-        <div className="refund-col">
-          {items.map((item, i) => (
-            <button
-              key={item.invoice}
-              className={`refund-card${selectedInvoice === i ? ' refund-selected' : ''}${matched.has(i) ? ' refund-matched' : ''}`}
-              onClick={() => !matched.has(i) && setSelectedInvoice(i)}
-              disabled={matched.has(i)}
-              type="button"
-            >
-              <span className="refund-id">{item.invoice}</span>
-              <span className="refund-amount">{item.charged}</span>
-            </button>
-          ))}
-        </div>
-        <div className="refund-col">
-          {shuffledRefunds.map(refund => {
-            const isMatched = [...matched].some(i => items[i].refund === refund);
-            return (
-              <button
-                key={refund}
-                className={`refund-card refund-target${isMatched ? ' refund-matched' : ''}`}
-                onClick={() => handleRefundClick(refund)}
-                disabled={isMatched}
-                type="button"
-              >
-                <span className="refund-amount">{refund}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 
 
 // ---------------------------------------------------------------------------
@@ -1717,8 +1602,7 @@ const IMPLEMENTED_MINIGAMES = new Set<MiniGameId>([
   'match-the-vendor',
   'monkey-type',
   'name-five-aws-region',
-  'pod-doctor',
-  'refund-rush',
+
   'traffic-filter',
 ]);
 
@@ -1772,14 +1656,6 @@ export function MiniGamePanel({
 
   if (miniGameId === 'cache-knowledge') {
     return <CacheKnowledgeGame onResolve={onResolve} />;
-  }
-
-  if (miniGameId === 'pod-doctor') {
-    return <PodDoctorGame onResolve={onResolve} />;
-  }
-
-  if (miniGameId === 'refund-rush') {
-    return <RefundRushGame onResolve={onResolve} />;
   }
 
   if (miniGameId === 'traffic-filter') {
