@@ -99,8 +99,9 @@ export function Lobby() {
   return (
     <div className="landing-wrapper">
       <div className="landing-top">
-        <span className="eyebrow">Deploy or Die</span>
-        <h1 className="landing-title">Spaceteam for<br />software engineers.</h1>
+        <span className="eyebrow">Multiplayer Browser Game</span>
+        <h1 className="landing-title">Deploy or Die</h1>
+        <p className="landing-desc">Spaceteam for software engineers.</p>
 
         <div className="landing-name-bar">
           <label className="landing-name-label" htmlFor="player-name">
