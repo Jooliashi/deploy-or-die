@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Sparkline } from '@/components/sparkline';
 import { WaitingRoom } from '@/components/waiting-room';
-import { getControlLabels, getPlayableControlLabels, roles } from '@/lib/game/data';
+import { getControlLabels, promptPool, roles } from '@/lib/game/data';
 import type { ControlDefinition } from '@/lib/game/types';
 import {
   createJazzRoom,
@@ -367,16 +367,7 @@ function getPlayerControls(roleId: string): string[] {
   return [...own, ...others];
 }
 
-/** Only control labels that have prompts in the pool (for filtering spawns). */
-function getPlayerPlayableControls(roleId: string): string[] {
-  const own = getPlayableControlLabels(roleId as typeof roles[number]['id']);
-  const others = roles
-    .filter(r => r.id !== roleId)
-    .flatMap(r => r.controls.filter(c => !!c.miniGameId).map(c => c.label))
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 2);
-  return [...own, ...others];
-}
+
 
 function getControlDefinition(label: string): ControlDefinition | undefined {
   for (const role of roles) {
@@ -405,17 +396,30 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const playerId = useRef(`p_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`).current;
 
   const demoRoleId = isDemo ? roles[0].id : undefined;
-  // Playable controls (only controls with prompts in pool) — used for spawn filtering.
-  const playerPlayableControls = useMemo(
-    () => (demoRoleId ? getPlayerPlayableControls(demoRoleId) : undefined),
+
+  // Compute the 6 display controls once (stable across renders). In demo
+  // mode this is computed eagerly so the adapter can use the same set.
+  const demoControls = useMemo(
+    () => (demoRoleId ? getPlayerControls(demoRoleId) : undefined),
     [demoRoleId],
+  );
+
+  // Playable subset of the display controls — only those with prompts in
+  // the pool. Derived from the SAME set so buttons and prompts always match.
+  const demoPlayableControls = useMemo(
+    () => {
+      if (!demoControls) return undefined;
+      const playableSet = new Set(promptPool.map(t => t.actionLabel));
+      return demoControls.filter(c => playableSet.has(c));
+    },
+    [demoControls],
   );
 
   const [adapter, setAdapter] = useState<MultiplayerAdapter | null>(() => {
     if (isDemo) {
-      const { room } = createJazzRoom({ roomCode, isDemo: true, playerControls: playerPlayableControls });
+      const { room } = createJazzRoom({ roomCode, isDemo: true, playerControls: demoPlayableControls });
       const a = new JazzMultiplayerAdapter(room, {
-        playerControls: playerPlayableControls,
+        playerControls: demoPlayableControls,
         isHost: true, // demo is always host
       });
       adapterRef.current = a;
@@ -433,14 +437,14 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const [now, setNow] = useState(Date.now());
   const subcontrolStageRef = useRef<HTMLElement>(null);
 
-  // Derive role and controls unconditionally (before any early returns) to
-  // satisfy the Rules of Hooks.
+  // Derive role and controls unconditionally (before any early returns).
   const currentRole = state?.players.find(p => p.id === playerId)?.role ?? 'frontend';
   const role = roles.find(r => r.id === currentRole) ?? roles[0];
-  // Always show 6 buttons (own role's 4 + 2 extras) regardless of playability.
+  // Always show 6 buttons. In demo, use the pre-computed set; in multiplayer,
+  // compute fresh (stable via useMemo).
   const controls = useMemo(
-    () => getPlayerControls(currentRole),
-    [currentRole],
+    () => demoControls ?? getPlayerControls(currentRole),
+    [demoControls, currentRole],
   );
   const openControlDefinition = openSubControl ? getControlDefinition(openSubControl) : undefined;
 

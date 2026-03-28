@@ -154,8 +154,11 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     if (prompt) {
       prompt.$jazz.set('status', 'resolved');
       this.#adjustValuation(50_000);
-      // Only the host spawns replacements to avoid duplicates across clients.
-      if (this.#isHost) this.#spawnIfNeeded();
+      if (this.#isHost) {
+        // Immediately activate the next queued prompt so there's zero gap.
+        this.#activateNextPrompts();
+        this.#spawnIfNeeded();
+      }
     }
   }
 
@@ -164,12 +167,19 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     if (prompt) {
       prompt.$jazz.set('status', 'failed');
       this.#adjustValuation(-120_000);
-      if (this.#isHost) this.#spawnIfNeeded();
+      if (this.#isHost) {
+        this.#activateNextPrompts();
+        this.#spawnIfNeeded();
+      }
     }
   }
 
   misfireControl(_playerId: string, _controlLabel: string): void {
     this.#adjustValuation(-20_000);
+    if (this.#isHost) {
+      this.#activateNextPrompts();
+      this.#spawnIfNeeded();
+    }
   }
 
   subscribe(listener: (state: SharedRoomState) => void): () => void {
@@ -423,17 +433,10 @@ export function createJazzRoom(options: {
     bankrupt: false,
   }, ownerOpt);
 
-  const players = isDemo
-    ? JazzPlayerList.create(
-        roles.map((role, i) => ({
-          playerId: `p${i + 1}`,
-          name: ['Alex', 'Jules', 'Mina'][i],
-          role: role.id,
-          ready: true,
-        })),
-        ownerOpt,
-      )
-    : JazzPlayerList.create([], ownerOpt);
+  // Always start with an empty player list. In demo, the single real player
+  // is added via addPlayer() on mount, avoiding ghost players that conflict
+  // with prompt assignment.
+  const players = JazzPlayerList.create([], ownerOpt);
 
   const room = JazzRoom.create(
     { deploy, players, gameStarted: !!isDemo },
