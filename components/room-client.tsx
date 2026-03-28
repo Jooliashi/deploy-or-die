@@ -425,9 +425,12 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   );
   const [openSubControl, setOpenSubControl] = useState<string | null>(null);
   const [activeMiniGamePrompt, setActiveMiniGamePrompt] = useState<PromptDefinition | null>(null);
+  const [minigameSuccess, setMinigameSuccess] = useState(false);
   const [misfiredControl, setMisfiredControl] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const subcontrolStageRef = useRef<HTMLElement>(null);
+  const minigameStageRef = useRef<HTMLElement>(null);
+  const successAudioRef = useRef<AudioContext | null>(null);
 
   // Derive role and controls unconditionally (before any early returns).
   const currentRole = state?.players.find(p => p.id === playerId)?.role ?? 'frontend';
@@ -470,6 +473,11 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     return () => window.clearTimeout(timeout);
   }, [misfiredControl]);
 
+  useEffect(() => () => {
+    void successAudioRef.current?.close();
+    successAudioRef.current = null;
+  }, []);
+
   // Join the room and subscribe to state.
   useEffect(() => {
     if (!adapter) return;
@@ -483,6 +491,10 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   }, [adapter, playerId, playerName]);
 
   const closeSubControls = useCallback(() => setOpenSubControl(null), []);
+  const closeMiniGame = useCallback(() => {
+    setActiveMiniGamePrompt(null);
+    setMinigameSuccess(false);
+  }, []);
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') {
@@ -490,6 +502,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
       }
 
       if (activeMiniGamePrompt) {
+        closeMiniGame();
         return;
       }
 
@@ -497,13 +510,19 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [activeMiniGamePrompt, closeSubControls]);
+  }, [activeMiniGamePrompt, closeMiniGame, closeSubControls]);
 
   const handleSubcontrolBackdropClick = useCallback((e: React.MouseEvent) => {
     if (subcontrolStageRef.current && !subcontrolStageRef.current.contains(e.target as Node)) {
       closeSubControls();
     }
   }, [closeSubControls]);
+
+  const handleMiniGameBackdropClick = useCallback((e: React.MouseEvent) => {
+    if (minigameStageRef.current && !minigameStageRef.current.contains(e.target as Node)) {
+      closeMiniGame();
+    }
+  }, [closeMiniGame]);
 
   const launchMiniGame = useCallback((prompt: PromptDefinition) => {
     if (!adapter) {
@@ -517,8 +536,65 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     }
 
     setOpenSubControl(null);
+    setMinigameSuccess(false);
     setActiveMiniGamePrompt(prompt);
   }, [adapter]);
+
+  useEffect(() => {
+    if (!minigameSuccess || typeof window === 'undefined') {
+      return;
+    }
+
+    const AudioContextClass = window.AudioContext || (window as typeof window & {
+      webkitAudioContext?: typeof AudioContext;
+    }).webkitAudioContext;
+
+    if (!AudioContextClass) {
+      return;
+    }
+
+    const ctx = successAudioRef.current ?? new AudioContextClass();
+    successAudioRef.current = ctx;
+
+    if (ctx.state === 'suspended') {
+      void ctx.resume();
+    }
+
+    const now = ctx.currentTime;
+    const gain = ctx.createGain();
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
+
+    const notes = [
+      { frequency: 523.25, start: 0 },
+      { frequency: 659.25, start: 0.08 },
+      { frequency: 783.99, start: 0.16 },
+    ];
+
+    notes.forEach(note => {
+      const oscillator = ctx.createOscillator();
+      oscillator.type = 'triangle';
+      oscillator.frequency.setValueAtTime(note.frequency, now + note.start);
+      oscillator.connect(gain);
+      oscillator.start(now + note.start);
+      oscillator.stop(now + note.start + 0.16);
+    });
+  }, [minigameSuccess]);
+
+  useEffect(() => {
+    if (!activeMiniGamePrompt || !minigameSuccess || !adapter) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      adapter.resolvePrompt(activeMiniGamePrompt.id);
+      closeMiniGame();
+    }, 650);
+
+    return () => window.clearTimeout(timeout);
+  }, [activeMiniGamePrompt, adapter, closeMiniGame, minigameSuccess]);
 
   // ── Render gates (no hooks below this point) ──────────────
 
@@ -799,8 +875,13 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
         ) : null}
 
         {activeMiniGamePrompt ? (
-          <div className="mini-backdrop mini-backdrop-game">
-            <section className={`mini-stage mini-stage-${role.id} mini-stage-game`} aria-modal="true" role="dialog">
+          <div className="mini-backdrop mini-backdrop-game" onClick={handleMiniGameBackdropClick}>
+            <section
+              aria-modal="true"
+              className={`mini-stage mini-stage-${role.id} mini-stage-game`}
+              ref={minigameStageRef}
+              role="dialog"
+            >
               <div className="mini-stage-head">
                 <div>
                   <span className="eyebrow">Mini Game</span>
@@ -814,10 +895,15 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
               <MiniGamePanel
                 miniGameId={activeMiniGamePrompt.miniGameId}
                 onResolve={() => {
-                  adapter.resolvePrompt(activeMiniGamePrompt.id);
-                  setActiveMiniGamePrompt(null);
+                  setMinigameSuccess(true);
                 }}
               />
+
+              {minigameSuccess ? (
+                <div className="minigame-success">
+                  <div className="minigame-success-badge">Success!</div>
+                </div>
+              ) : null}
             </section>
           </div>
         ) : null}
