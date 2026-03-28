@@ -412,6 +412,8 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const subcontrolStageRef = useRef<HTMLElement>(null);
   const minigameStageRef = useRef<HTMLElement>(null);
   const successAudioRef = useRef<AudioContext | null>(null);
+  const warningAudioRef = useRef<AudioContext | null>(null);
+  const lastWarningSecondRef = useRef<string | null>(null);
 
   // Get this player's controls from the shared state (assigned by host on
   // game start). In demo, use the user's chosen set. Falls back to empty.
@@ -455,6 +457,8 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   useEffect(() => () => {
     void successAudioRef.current?.close();
     successAudioRef.current = null;
+    void warningAudioRef.current?.close();
+    warningAudioRef.current = null;
   }, []);
 
   // Join the room and subscribe to state.
@@ -574,6 +578,60 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
 
     return () => window.clearTimeout(timeout);
   }, [activeMiniGamePrompt, adapter, closeMiniGame, minigameSuccess]);
+
+  const warningPrompt = state?.gameStarted
+    ? state.deploy.prompts
+      .filter(p => p.assignedTo === playerId && (p.status === 'queued' || p.status === 'active') && p.createdAt > 0)
+      .sort((a, b) => a.createdAt - b.createdAt)[0] ?? null
+    : null;
+  const warningRemaining = warningPrompt
+    ? Math.max(0, warningPrompt.timerSeconds - Math.floor((now - warningPrompt.createdAt) / 1000))
+    : null;
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !warningPrompt || warningRemaining === null || warningRemaining > 5 || warningRemaining <= 0) {
+      if (!warningPrompt || warningRemaining === null || warningRemaining > 5) {
+        lastWarningSecondRef.current = null;
+      }
+      return;
+    }
+
+    const beepKey = `${warningPrompt.id}:${warningRemaining}`;
+    if (lastWarningSecondRef.current === beepKey) {
+      return;
+    }
+    lastWarningSecondRef.current = beepKey;
+
+    const AudioContextClass = window.AudioContext || (window as typeof window & {
+      webkitAudioContext?: typeof AudioContext;
+    }).webkitAudioContext;
+    if (!AudioContextClass) {
+      return;
+    }
+
+    const ctx = warningAudioRef.current ?? new AudioContextClass();
+    warningAudioRef.current = ctx;
+    if (ctx.state === 'suspended') {
+      void ctx.resume();
+    }
+
+    const currentTime = ctx.currentTime;
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(880, currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(660, currentTime + 0.12);
+
+    gain.gain.setValueAtTime(0.0001, currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.1, currentTime + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, currentTime + 0.14);
+
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.start(currentTime);
+    oscillator.stop(currentTime + 0.15);
+  }, [warningPrompt, warningRemaining]);
 
   // ── Render gates (no hooks below this point) ──────────────
 

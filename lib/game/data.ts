@@ -285,7 +285,7 @@ export const demoDeployState: DeployState = {
   roomCode: 'SHIP-42',
   valuation: STARTING_VALUATION,
   valuationHistory: [STARTING_VALUATION],
-  timeRemainingSeconds: 300,
+  timeRemainingSeconds: 180,
   prompts: [],
   bankrupt: false,
 };

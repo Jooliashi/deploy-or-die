@@ -40,6 +40,14 @@ export const MAX_VISIBLE_ALERTS = 1;
 /** How many queued prompts to keep in the backlog per player so there's
  *  always a next task ready the instant the current one completes. */
 const QUEUE_DEPTH = 5;
+const MIN_PROMPT_TIMER_SECONDS = 30;
+const EXTRA_SECONDS_PER_ADDITIONAL_PLAYER = 5;
+
+function scalePromptTimer(timerSeconds: number, playerCount: number): number {
+  const base = Math.max(timerSeconds, MIN_PROMPT_TIMER_SECONDS);
+  const extraPlayers = Math.max(0, playerCount - 2);
+  return base + extraPlayers * EXTRA_SECONDS_PER_ADDITIONAL_PLAYER;
+}
 
 function coRoomToState(room: LoadedJazzRoom): SharedRoomState {
   const prompts: PromptDefinition[] = room.deploy.prompts.map(p => ({
@@ -299,6 +307,7 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     if (players.length === 0) return;
 
     const isDemo = !!this.#playerControls;
+    const scaledPlayerCount = Math.max(players.length, 1);
 
     // Collect all controls across all players (for cross-player assignment).
     const allPlayerControls = new Set<string>();
@@ -336,7 +345,7 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
           actionLabel: template.actionLabel,
           selectionLabel: template.selectionLabel,
           miniGameId: template.miniGameId,
-          timerSeconds: template.timerSeconds,
+          timerSeconds: scalePromptTimer(template.timerSeconds, scaledPlayerCount),
           status: 'queued',
           createdAt: 0,
           assignedTo: player.playerId,
@@ -465,7 +474,10 @@ export function createJazzRoom(options: {
   // Demo: seed 1 prompt for the player. Multiplayer: start empty — the host
   // will spawn prompts once the game starts and player roles are known.
   const initialPrompts = isDemo && playerControls
-    ? pickRandomPrompts(1, playerControls)
+    ? pickRandomPrompts(1, playerControls).map(prompt => ({
+      ...prompt,
+      timerSeconds: scalePromptTimer(prompt.timerSeconds, 1),
+    }))
     : [];
 
   const prompts = JazzPromptList.create(
@@ -493,7 +505,7 @@ export function createJazzRoom(options: {
     roomCode,
     valuation: STARTING_VALUATION,
     valuationHistory,
-    timeRemainingSeconds: 300,
+    timeRemainingSeconds: 180,
     prompts,
     bankrupt: false,
   }, ownerOpt);
