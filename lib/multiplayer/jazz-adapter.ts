@@ -1,5 +1,5 @@
 import { co, Group, type ID } from 'jazz-tools';
-import { demoDeployState, LEVELS, pickRandomPrompts, promptPool, roles, STARTING_VALUATION } from '@/lib/game/data';
+import { demoDeployState, getLevelConfig, LEVELS, pickRandomPrompts, promptPool, roles, STARTING_VALUATION } from '@/lib/game/data';
 import type { DeployState, LevelPhase, PromptDefinition, PromptStatus } from '@/lib/game/types';
 import {
   JazzControlList,
@@ -28,8 +28,9 @@ type LoadedJazzRoom = co.loaded<typeof JazzRoom, typeof ROOM_RESOLVE>;
 /** All control labels from the full pool. */
 const ALL_CONTROL_LABELS = [...new Set(promptPool.map(t => t.actionLabel))];
 
-/** Number of controls each player gets. */
-const CONTROLS_PER_PLAYER = LEVELS[LEVELS.length - 1].buttonCount;
+/** Max number of controls each player gets (assigned up front, levels reveal
+ *  a subset). Must be >= the highest buttonCount any level can reach. */
+const CONTROLS_PER_PLAYER = 8;
 
 let promptCounter = 0;
 
@@ -55,10 +56,6 @@ function scalePromptTimer(timerSeconds: number, playerCount: number): number {
 
 function getFailureThreshold(playerCount: number): number {
   return Math.max(3, playerCount + 1);
-}
-
-function getLevelConfig(level: number) {
-  return LEVELS[Math.max(0, Math.min(level - 1, LEVELS.length - 1))];
 }
 
 function coRoomToState(room: LoadedJazzRoom): SharedRoomState {
@@ -491,12 +488,7 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
 
   #completeCurrentLevel(): void {
     const currentLevel = this.#room.deploy.currentLevel;
-    if (currentLevel >= LEVELS.length) {
-      this.#clearPrompts();
-      this.#room.deploy.$jazz.set('levelPhase', 'complete');
-      return;
-    }
-
+    // Always advance to the next level — levels are infinite.
     this.#setLevelBriefing(currentLevel + 1);
   }
 

@@ -14,11 +14,24 @@ interface FlattenedPromptTemplate extends PromptTemplateDefinition {
   miniGameId: PromptDefinition['miniGameId'];
 }
 
+/** Predefined levels. After these, levels are generated infinitely with
+ *  escalating difficulty (more buttons, shorter timers). */
 export const LEVELS = [
-  { level: 1, buttonCount: 3, durationSeconds: 60 },
+  { level: 1, buttonCount: 3, durationSeconds: 120 },
   { level: 2, buttonCount: 4, durationSeconds: 120 },
-  { level: 3, buttonCount: 5, durationSeconds: 180 },
-] as const;
+  { level: 3, buttonCount: 5, durationSeconds: 120 },
+];
+
+/** Generate a level config for any level number. Uses predefined levels for
+ *  1-3, then scales difficulty infinitely beyond that. */
+export function getLevelConfig(level: number): { level: number; buttonCount: number; durationSeconds: number } {
+  if (level <= LEVELS.length) {
+    return LEVELS[level - 1];
+  }
+  // Beyond predefined levels: keep adding buttons (max 8) and keep duration at 120s.
+  const buttonCount = Math.min(3 + level - 1, 8);
+  return { level, buttonCount, durationSeconds: 120 };
+}
 
 function formatSubControlLabel(key: string): string {
   return key
