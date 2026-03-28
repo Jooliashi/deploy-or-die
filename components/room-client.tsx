@@ -7,6 +7,7 @@ import { Sparkline } from '@/components/sparkline';
 import { WaitingRoom } from '@/components/waiting-room';
 import { roles } from '@/lib/game/data';
 import type { ControlDefinition, PromptDefinition } from '@/lib/game/types';
+import { Group } from 'jazz-tools';
 import {
   createJazzRoom,
   DEMO_ROOM_CODE,
@@ -389,10 +390,11 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   // Create the demo adapter once controls are chosen.
   const startDemo = useCallback((chosenControls: string[]) => {
     setDemoControls(chosenControls);
-    const { room } = createJazzRoom({ roomCode, isDemo: true, playerControls: chosenControls });
+    const { room, ownerGroup } = createJazzRoom({ roomCode, isDemo: true, playerControls: chosenControls });
     const a = new JazzMultiplayerAdapter(room, {
       playerControls: chosenControls,
       isHost: true,
+      ownerGroup,
     });
     adapterRef.current = a;
     setAdapter(a);
@@ -428,7 +430,10 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
         setLoadError('Room not found. The code may be invalid or the room may have expired.');
         return;
       }
-      const a = new JazzMultiplayerAdapter(room, { isHost });
+      // Get the room's owning group so new CoValues (like player controls)
+      // inherit the same public access.
+      const ownerGroup = room.$jazz.owner as Group | undefined;
+      const a = new JazzMultiplayerAdapter(room, { isHost, ownerGroup });
       adapterRef.current = a;
       setAdapter(a);
     })();
@@ -627,10 +632,11 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     .slice(0, MAX_VISIBLE_ALERTS);
   const activeAlert = myAlerts[0] ?? null;
 
-  // Only the player's single visible alert should drive button/subcontrol
-  // matching, otherwise another started prompt with the same action label can
-  // incorrectly validate the wrong choice.
-  const actionablePrompt = activeAlert;
+  // Buttons should respond to ANY started prompt that matches, not just the
+  // player's own alert. In Spaceteam, Player A sees a task and tells Player B
+  // to press a button — Player B needs that button to light up even though
+  // the prompt is assigned to Player A.
+  const actionablePrompts = startedPrompts;
 
   // Count only started prompts for the display.
   const allLiveCount = startedPrompts.length;
@@ -759,7 +765,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
         <section className="station stack">
           <div className="command-board">
             {controls.map(control => {
-              const prompt = actionablePrompt?.actionLabel === control ? actionablePrompt : undefined;
+              const prompt = actionablePrompts.find(p => p.actionLabel === control);
               const controlDef = getControlDefinition(control);
               const hasPrompt = !!prompt;
               const skin = getControlSkin(control);
@@ -811,8 +817,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
                 {Object.keys(openControlDefinition.subControls).map(subControlKey => {
                   const subLabel =
                     subControlKey === 'default' ? 'Confirm' : formatSubControlLabel(subControlKey);
-                  const prompt =
-                    actionablePrompt?.actionLabel === openSubControl ? actionablePrompt : undefined;
+                  const prompt = actionablePrompts.find(p => p.actionLabel === openSubControl);
                   const isMatch =
                     subControlKey === 'default'
                       ? !prompt?.selectionLabel
