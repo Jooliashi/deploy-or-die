@@ -35,7 +35,7 @@ export const roles: RoleDefinition[] = [
         subControls: {
           default: [
             { label: 'The newly deployed page is crashing', timerSeconds: 18 },
-            { label: 'After version update, the whole dashboard is crashing', timerSeconds: 16 },
+            { label: 'After a version update, the entire dashboard is crashing', timerSeconds: 16 },
           ],
         },
       },
@@ -44,8 +44,8 @@ export const roles: RoleDefinition[] = [
         miniGameId: 'guess-the-hex',
         subControls: {
           default: [
-            { label: 'The button on upgrade banner does not work', timerSeconds: 20 },
-            { label: 'The link in docs website is linking to the wrong destination', timerSeconds: 17 },
+            { label: 'The button on the upgrade banner does not work', timerSeconds: 20 },
+            { label: 'A link on the docs site is pointing to the wrong destination', timerSeconds: 17 },
           ],
         },
       },
@@ -54,10 +54,10 @@ export const roles: RoleDefinition[] = [
         miniGameId: 'guess-the-country',
         subControls: {
           turnOn: [
-            { label: 'We need to roll out the new feature behind the flag right NOW', timerSeconds: 19 },
+            { label: 'We need to roll out the new feature behind the flag right now', timerSeconds: 19 },
           ],
           turnOff: [
-            { label: 'The wrong customers are flagged in our new feature experiment', timerSeconds: 15 },
+            { label: 'The wrong customers are flagged in the new feature experiment', timerSeconds: 15 },
           ],
         },
       },
@@ -65,10 +65,10 @@ export const roles: RoleDefinition[] = [
         label: 'Configs',
         subControls: {
           envVariable: [
-            { label: 'current Stripe token is leaked!', timerSeconds: 18 },
+            { label: 'The current Stripe token has been leaked', timerSeconds: 18 },
           ],
           teamMemberManagement: [
-            { label: 'We have a new hire that needs access to Vercel Team', timerSeconds: 14 },
+            { label: 'A new hire needs access to the Vercel team', timerSeconds: 14 },
           ],
         },
       },
@@ -85,7 +85,7 @@ export const roles: RoleDefinition[] = [
         subControls: {
           default: [
             { label: 'Edge Config updates are not propagating to all regions', timerSeconds: 18 },
-            { label: 'Edge Config was blocked by the firewall', timerSeconds: 16 },
+            { label: 'Edge Config is being blocked by the firewall', timerSeconds: 16 },
           ],
         },
       },
@@ -103,7 +103,7 @@ export const roles: RoleDefinition[] = [
         miniGameId: 'name-five-aws-region',
         subControls: {
           default: [
-            { label: 'Critical Functions are cold-starting in the wrong region', timerSeconds: 21 },
+            { label: 'Critical functions are cold-starting in the wrong region', timerSeconds: 21 },
             { label: 'Function logs show the auth handler routing to an old build', timerSeconds: 16 },
           ],
         },
@@ -113,7 +113,7 @@ export const roles: RoleDefinition[] = [
         miniGameId: 'cache-knowledge',
         subControls: {
           default: [
-            { label: 'Runtime cache is pinning stale session data in production', timerSeconds: 15 },
+            { label: 'The runtime cache is pinning stale session data in production', timerSeconds: 15 },
             { label: 'A cached payload is shadowing the latest config response', timerSeconds: 18 },
           ],
         },
@@ -129,45 +129,45 @@ export const roles: RoleDefinition[] = [
         label: 'Tinybird',
         subControls: {
           createMV: [
-            { label: 'A Tinybird query is timing out and inefficient', timerSeconds: 18 },
+            { label: 'A Tinybird query is timing out and running inefficiently', timerSeconds: 18 },
           ],
           scaleDown: [
-            { label: 'Tinybird bill was 100 million dollars last month', timerSeconds: 18 },
+            { label: 'The Tinybird bill was $100 million last month', timerSeconds: 18 },
           ],
           restoreBackup: [
-            { label: 'Matheus accidentally deleted a datasource in Tinybird', timerSeconds: 18 },
+            { label: 'Someone accidentally deleted a data source in Tinybird', timerSeconds: 18 },
           ],
         },
       },
       {
-        label: 'Clickhouse',
+        label: 'ClickHouse',
         miniGameId: 'math',
         subControls: {
           default: [
-            { label: 'Clickhouse query replicas are split across inconsistent shards', timerSeconds: 20 },
+            { label: 'ClickHouse query replicas are split across inconsistent shards', timerSeconds: 20 },
             { label: 'An analytics shard is overloaded after the latest launch spike', timerSeconds: 17 },
           ],
         },
       },
       {
-        label: 'Cosmodb',
+        label: 'Cosmos DB',
         subControls: {
           scaleUp: [
-            { label: 'Cosmodb is throttling writes during a deploy spike', timerSeconds: 15 },
+            { label: 'Cosmos DB is throttling writes during a deploy spike', timerSeconds: 15 },
           ],
           addReplica: [
-            { label: 'Cosmodb failover coverage is missing a secondary replica', timerSeconds: 18 },
+            { label: 'Cosmos DB failover coverage is missing a secondary replica', timerSeconds: 18 },
           ],
           failover: [
-            { label: 'The primary Cosmodb region is erroring on every write', timerSeconds: 14 },
+            { label: 'The primary Cosmos DB region is erroring on every write', timerSeconds: 14 },
           ],
         },
       },
       {
-        label: 'Dynamodb',
+        label: 'DynamoDB',
         subControls: {
           default: [
-            { label: 'The metadata service table is throtteling and does not scale up', timerSeconds: 16 },
+            { label: 'The metadata service table is throttling and will not scale up', timerSeconds: 16 },
             { label: 'DynamoDB is down in the dxb1 region', timerSeconds: 19 },
           ],
         },
@@ -184,8 +184,8 @@ export const roles: RoleDefinition[] = [
         miniGameId: 'monkey-type',
         subControls: {
           default: [
-            { label: 'A new feature has to be announced on social media', timerSeconds: 18 },
-            { label: 'A tech influencer is complaining about pricing', timerSeconds: 20 },
+            { label: 'A new feature needs to be announced on social media', timerSeconds: 18 },
+            { label: 'A tech influencer is complaining about pricing on X', timerSeconds: 20 },
           ],
         },
       },
@@ -194,10 +194,10 @@ export const roles: RoleDefinition[] = [
         miniGameId: 'match-the-customer',
         subControls: {
           reply: [
-            { label: 'An enterprise customer has issues with the dashboard', timerSeconds: 20 },
+            { label: 'An enterprise customer is having issues with the dashboard', timerSeconds: 20 },
           ],
           guide: [
-            { label: 'A wave of customers needs a how-to guide for the new flow', timerSeconds: 17 },
+            { label: 'A wave of customers need a how-to guide for the new flow', timerSeconds: 17 },
           ],
         },
       },
@@ -218,7 +218,7 @@ export const roles: RoleDefinition[] = [
         subControls: {
           default: [
             { label: 'The status page still shows green while customers report downtime', timerSeconds: 15 },
-            { label: 'Recovery completed but the status banner never cleared', timerSeconds: 14 },
+            { label: 'Recovery is completed but the status banner never cleared', timerSeconds: 14 },
           ],
         },
       },
