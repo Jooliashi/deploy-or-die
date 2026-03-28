@@ -281,8 +281,6 @@ export const roles: RoleDefinition[] = [
       },
       {
         label: 'Networking',
-        // Mini-game idea: "trace the route" — wire domain names to IPs
-        miniGameId: 'trace-the-route',
         subControls: {
           fixDNS: [
             { label: 'DNS propagation is stuck and the new domain is not resolving', timerSeconds: 19 },

@@ -1355,12 +1355,6 @@ function CacheKnowledgeGame({ onResolve }: { onResolve: () => void }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Pipeline Fixer — reorder shuffled CI/CD stages
-// ---------------------------------------------------------------------------
-
-const PIPELINE_STAGES = ['Lint', 'Test', 'Build', 'Deploy', 'Verify'];
-
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -1368,53 +1362,6 @@ function shuffle<T>(arr: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
-}
-
-function PipelineFixerGame({ onResolve }: { onResolve: () => void }) {
-  const [order, setOrder] = useState(() => {
-    let s = shuffle(PIPELINE_STAGES);
-    while (s.every((v, i) => v === PIPELINE_STAGES[i])) s = shuffle(PIPELINE_STAGES);
-    return s;
-  });
-  const [dragging, setDragging] = useState<number | null>(null);
-
-  const swap = useCallback((from: number, to: number) => {
-    setOrder(prev => {
-      const next = [...prev];
-      [next[from], next[to]] = [next[to], next[from]];
-      return next;
-    });
-    setDragging(null);
-  }, []);
-
-  useEffect(() => {
-    if (order.every((v, i) => v === PIPELINE_STAGES[i])) {
-      onResolve();
-    }
-  }, [order, onResolve]);
-
-  return (
-    <div className="mini-shell mini-shell-pipeline">
-      <div className="mini-callout mini-callout-pipeline">Reorder the pipeline stages</div>
-      <div className="pipeline-stages">
-        {order.map((stage, i) => (
-          <button
-            key={stage}
-            className={`pipeline-stage${dragging === i ? ' pipeline-dragging' : ''}${stage === PIPELINE_STAGES[i] ? ' pipeline-correct' : ''}`}
-            onClick={() => {
-              if (dragging === null) { setDragging(i); return; }
-              swap(dragging, i);
-            }}
-            type="button"
-          >
-            <span className="pipeline-num">{i + 1}</span>
-            <span>{stage}</span>
-          </button>
-        ))}
-      </div>
-      {dragging !== null && <div className="pipeline-hint">Now tap where it should go</div>}
-    </div>
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1532,70 +1479,7 @@ function RefundRushGame({ onResolve }: { onResolve: () => void }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Trace the Route — match domains to IPs
-// ---------------------------------------------------------------------------
 
-const DNS_PAIRS = [
-  { domain: 'api.vercel.com', ip: '76.76.21.21' },
-  { domain: 'cdn.example.io', ip: '104.18.32.7' },
-  { domain: 'auth.service.dev', ip: '52.44.128.90' },
-  { domain: 'db.internal.net', ip: '10.0.3.42' },
-  { domain: 'edge.fastly.com', ip: '151.101.1.57' },
-];
-
-function TraceTheRouteGame({ onResolve }: { onResolve: () => void }) {
-  const [pairs] = useState(() => shuffle(DNS_PAIRS).slice(0, 3));
-  const [shuffledIps] = useState(() => shuffle(pairs.map(p => p.ip)));
-  const [selectedDomain, setSelectedDomain] = useState<number | null>(null);
-  const [matched, setMatched] = useState<Set<number>>(new Set());
-
-  const handleIpClick = useCallback((ip: string) => {
-    if (selectedDomain === null) return;
-    if (pairs[selectedDomain].ip === ip) {
-      const next = new Set(matched);
-      next.add(selectedDomain);
-      setMatched(next);
-      setSelectedDomain(null);
-      if (next.size === pairs.length) onResolve();
-    } else {
-      setSelectedDomain(null);
-    }
-  }, [selectedDomain, pairs, matched, onResolve]);
-
-  return (
-    <div className="mini-shell mini-shell-route">
-      <div className="mini-callout mini-callout-route">Match each domain to its IP address</div>
-      <div className="route-columns">
-        <div className="route-col">
-          {pairs.map((pair, i) => (
-            <button
-              key={pair.domain}
-              className={`route-card${selectedDomain === i ? ' route-selected' : ''}${matched.has(i) ? ' route-matched' : ''}`}
-              onClick={() => !matched.has(i) && setSelectedDomain(i)}
-              disabled={matched.has(i)}
-              type="button"
-            ><code>{pair.domain}</code></button>
-          ))}
-        </div>
-        <div className="route-col">
-          {shuffledIps.map(ip => {
-            const isMatched = [...matched].some(i => pairs[i].ip === ip);
-            return (
-              <button
-                key={ip}
-                className={`route-card route-target${isMatched ? ' route-matched' : ''}`}
-                onClick={() => handleIpClick(ip)}
-                disabled={isMatched}
-                type="button"
-              ><code>{ip}</code></button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Traffic Filter — tap malicious requests, avoid good ones
@@ -1698,10 +1582,8 @@ const IMPLEMENTED_MINIGAMES = new Set<MiniGameId>([
   'match-the-vendor',
   'monkey-type',
   'name-five-aws-region',
-  'pipeline-fixer',
   'pod-doctor',
   'refund-rush',
-  'trace-the-route',
   'traffic-filter',
 ]);
 
@@ -1757,20 +1639,12 @@ export function MiniGamePanel({
     return <CacheKnowledgeGame onResolve={onResolve} />;
   }
 
-  if (miniGameId === 'pipeline-fixer') {
-    return <PipelineFixerGame onResolve={onResolve} />;
-  }
-
   if (miniGameId === 'pod-doctor') {
     return <PodDoctorGame onResolve={onResolve} />;
   }
 
   if (miniGameId === 'refund-rush') {
     return <RefundRushGame onResolve={onResolve} />;
-  }
-
-  if (miniGameId === 'trace-the-route') {
-    return <TraceTheRouteGame onResolve={onResolve} />;
   }
 
   if (miniGameId === 'traffic-filter') {
