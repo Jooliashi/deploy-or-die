@@ -2929,7 +2929,7 @@ button {
 .landing-top {
   display: grid;
   gap: 20px;
-  max-width: 520px;
+  max-width: 900px;
   margin: 0 auto;
   text-align: center;
 }
@@ -2939,6 +2939,7 @@ button {
   font-size: clamp(56px, 10vw, 112px);
   line-height: 0.92;
   letter-spacing: -0.06em;
+  white-space: nowrap;
 }
 
 .landing-desc {
