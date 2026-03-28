@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Sparkline } from '@/components/sparkline';
 import { WaitingRoom } from '@/components/waiting-room';
-import { getControlLabels, roles } from '@/lib/game/data';
+import { getControlLabels, getPlayableControlLabels, roles } from '@/lib/game/data';
 import type { ControlDefinition } from '@/lib/game/types';
 import {
   createJazzRoom,
@@ -356,11 +356,23 @@ function formatValuation(v: number): string {
   return `$${v}`;
 }
 
+/** All control labels for the player's UI (includes non-playable for display). */
 function getPlayerControls(roleId: string): string[] {
   const own = getControlLabels(roleId as typeof roles[number]['id']);
   const others = roles
     .filter(r => r.id !== roleId)
     .flatMap(r => r.controls.map(control => control.label))
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 2);
+  return [...own, ...others];
+}
+
+/** Only control labels that have prompts in the pool (for filtering spawns). */
+function getPlayerPlayableControls(roleId: string): string[] {
+  const own = getPlayableControlLabels(roleId as typeof roles[number]['id']);
+  const others = roles
+    .filter(r => r.id !== roleId)
+    .flatMap(r => r.controls.filter(c => !!c.miniGameId).map(c => c.label))
     .sort(() => Math.random() - 0.5)
     .slice(0, 2);
   return [...own, ...others];
@@ -393,16 +405,17 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const playerId = useRef(`p_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`).current;
 
   const demoRoleId = isDemo ? roles[0].id : undefined;
-  const playerControls = useMemo(
-    () => (demoRoleId ? getPlayerControls(demoRoleId) : undefined),
+  // Playable controls (only controls with prompts in pool) — used for spawn filtering.
+  const playerPlayableControls = useMemo(
+    () => (demoRoleId ? getPlayerPlayableControls(demoRoleId) : undefined),
     [demoRoleId],
   );
 
   const [adapter, setAdapter] = useState<MultiplayerAdapter | null>(() => {
     if (isDemo) {
-      const { room } = createJazzRoom({ roomCode, isDemo: true, playerControls });
+      const { room } = createJazzRoom({ roomCode, isDemo: true, playerControls: playerPlayableControls });
       const a = new JazzMultiplayerAdapter(room, {
-        playerControls,
+        playerControls: playerPlayableControls,
         isHost: true, // demo is always host
       });
       adapterRef.current = a;
@@ -423,9 +436,10 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   // satisfy the Rules of Hooks.
   const currentRole = state?.players.find(p => p.id === playerId)?.role ?? 'frontend';
   const role = roles.find(r => r.id === currentRole) ?? roles[0];
+  // Always show 6 buttons (own role's 4 + 2 extras) regardless of playability.
   const controls = useMemo(
-    () => playerControls ?? getPlayerControls(currentRole),
-    [playerControls, currentRole],
+    () => getPlayerControls(currentRole),
+    [currentRole],
   );
 
   // Async load for multiplayer rooms.

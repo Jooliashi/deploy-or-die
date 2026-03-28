@@ -250,6 +250,14 @@ export function getControlLabels(roleId: RoleId): string[] {
   return roles.find(role => role.id === roleId)?.controls.map(control => control.label) ?? [];
 }
 
+/** Return only control labels that have prompts in the pool (have a miniGameId). */
+export function getPlayableControlLabels(roleId: RoleId): string[] {
+  return roles.find(role => role.id === roleId)
+    ?.controls
+    .filter(control => !!control.miniGameId)
+    .map(control => control.label) ?? [];
+}
+
 export const promptPool: FlattenedPromptTemplate[] = roles.flatMap(role =>
   role.controls.flatMap(control => flattenControlPrompts(role.id, control)),
 );
