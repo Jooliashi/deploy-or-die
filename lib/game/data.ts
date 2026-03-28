@@ -256,7 +256,7 @@ export const roles: RoleDefinition[] = [
   {
     id: 'infra',
     name: 'Infrastructure',
-    summary: 'Owns Kubernetes, networking, pipelines, and load balancing.',
+    summary: 'Owns Kubernetes, networking, DNS, and load balancing.',
     controls: [
       {
         label: 'Kubernetes',
@@ -297,18 +297,7 @@ export const roles: RoleDefinition[] = [
           ],
         },
       },
-      {
-        label: 'CI/CD Pipeline',
-        // Mini-game idea: "pipeline fixer" — reorder shuffled pipeline stages
-        miniGameId: 'pipeline-fixer',
-        subControls: {
-          default: [
-            { label: 'The deploy pipeline has been stuck in a rollback loop for 30 minutes', timerSeconds: 18 },
-            { label: 'A flaky test is blocking the entire release queue', timerSeconds: 15 },
-            { label: 'The build cache got corrupted and every build is starting from scratch', timerSeconds: 17 },
-          ],
-        },
-      },
+
     ],
   },
   {
