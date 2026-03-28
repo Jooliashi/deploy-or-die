@@ -99,6 +99,22 @@ interface MathRound {
   answer: number;
 }
 
+interface VendorCompany {
+  name: string;
+  description: string;
+}
+
+interface VendorRound {
+  answer: VendorCompany;
+  options: string[];
+}
+
+interface CustomerProfile {
+  id: string;
+  name: string;
+  avatar: string;
+}
+
 const CODE_SNIPPETS = [
   "const deploy = await ship({ target: 'production' });",
   "export const runtime = 'edge';",
@@ -122,6 +138,168 @@ const CODE_SNIPPETS = [
   "await invalidateByPrefix('preview:landing-page');",
   "const edgeRegion = process.env.VERCEL_REGION ?? 'iad1';",
   "const owner = team.slug.replace(/-/g, '_');",
+];
+
+const VENDOR_COMPANIES: VendorCompany[] = [
+  { name: 'Apple', description: 'Consumer tech company known for the iPhone, Mac, and App Store ecosystem.' },
+  { name: 'Microsoft', description: 'Software giant behind Windows, Office, Azure, and GitHub.' },
+  { name: 'Google', description: 'Search, ads, Android, Chrome, and cloud infrastructure company.' },
+  { name: 'Amazon', description: 'E-commerce and cloud company that operates AWS.' },
+  { name: 'Meta', description: 'Social platform company behind Facebook, Instagram, and WhatsApp.' },
+  { name: 'Netflix', description: 'Streaming platform famous for original series and recommendation algorithms.' },
+  { name: 'NVIDIA', description: 'Chip company best known for GPUs used in gaming and AI workloads.' },
+  { name: 'Adobe', description: 'Creative software company behind Photoshop, Illustrator, and Acrobat.' },
+  { name: 'Salesforce', description: 'Enterprise CRM and business cloud software platform.' },
+  { name: 'Oracle', description: 'Enterprise database, cloud, and business software company.' },
+  { name: 'SAP', description: 'German enterprise software company focused on ERP systems.' },
+  { name: 'IBM', description: 'Legacy enterprise tech company active in consulting, hybrid cloud, and AI.' },
+  { name: 'Intel', description: 'Semiconductor company long known for PC and server CPUs.' },
+  { name: 'AMD', description: 'Chip company competing in CPUs and GPUs for PCs, servers, and consoles.' },
+  { name: 'Cisco', description: 'Networking company known for routers, switches, and enterprise security.' },
+  { name: 'Qualcomm', description: 'Wireless chip and modem company heavily tied to mobile devices.' },
+  { name: 'Uber', description: 'Ride-hailing and delivery platform company.' },
+  { name: 'Airbnb', description: 'Travel platform for short-term stays and property rentals.' },
+  { name: 'Shopify', description: 'Commerce platform used by merchants to run online stores.' },
+  { name: 'Stripe', description: 'Payments infrastructure company used by developers and internet businesses.' },
+  { name: 'Block', description: 'Fintech company behind Square point-of-sale tools and Cash App.' },
+  { name: 'PayPal', description: 'Digital payments company used for online checkout and transfers.' },
+  { name: 'Spotify', description: 'Music streaming company with playlists and podcast distribution.' },
+  { name: 'Dropbox', description: 'Cloud file storage and sync company.' },
+  { name: 'Slack', description: 'Work messaging platform now owned by Salesforce.' },
+  { name: 'Zoom', description: 'Video meeting platform widely used for remote work.' },
+  { name: 'Atlassian', description: 'Team software company behind Jira, Confluence, and Trello.' },
+  { name: 'Datadog', description: 'Cloud observability company for logs, metrics, and traces.' },
+  { name: 'Snowflake', description: 'Cloud data warehouse and analytics platform.' },
+  { name: 'Cloudflare', description: 'Edge network company offering CDN, DNS, and security services.' },
+  { name: 'GitHub', description: 'Code hosting and collaboration platform using Git.' },
+  { name: 'GitLab', description: 'DevOps platform combining source control, CI, and deployment tooling.' },
+  { name: 'Twilio', description: 'Communications API company for SMS, voice, and authentication.' },
+  { name: 'HubSpot', description: 'Marketing, CRM, and sales automation software company.' },
+  { name: 'ServiceNow', description: 'Enterprise workflow and IT service management platform.' },
+  { name: 'MongoDB', description: 'Database company known for a popular document-oriented database.' },
+  { name: 'Confluent', description: 'Data streaming company built around Apache Kafka.' },
+  { name: 'Elastic', description: 'Search and observability company behind Elasticsearch.' },
+  { name: 'Redis', description: 'In-memory data platform associated with caching and fast key-value workloads.' },
+  { name: 'HashiCorp', description: 'Infrastructure automation company behind Terraform and Vault.' },
+  { name: 'Databricks', description: 'Data and AI platform company built around lakehouse workflows.' },
+  { name: 'OpenAI', description: 'AI lab and product company behind ChatGPT and large language models.' },
+  { name: 'Anthropic', description: 'AI company focused on Claude and model safety.' },
+  { name: 'Figma', description: 'Collaborative product design tool used for interface mockups and prototyping.' },
+  { name: 'Canva', description: 'Visual design platform for lightweight graphics, presentations, and social posts.' },
+  { name: 'Notion', description: 'Workspace app mixing docs, wikis, and lightweight databases.' },
+  { name: 'Asana', description: 'Project management software company for team task tracking.' },
+  { name: 'Linear', description: 'Issue tracking tool popular with software product teams.' },
+  { name: 'Vercel', description: 'Frontend cloud platform focused on deployment, preview environments, and Next.js.' },
+  { name: 'Netlify', description: 'Web deployment platform known for JAMstack hosting and previews.' },
+  { name: 'Supabase', description: 'Developer platform offering hosted Postgres, auth, and storage.' },
+  { name: 'PlanetScale', description: 'MySQL-compatible serverless database platform based on Vitess.' },
+  { name: 'Cockroach Labs', description: 'Distributed SQL database company behind CockroachDB.' },
+  { name: 'DigitalOcean', description: 'Cloud infrastructure provider popular with startups and developers.' },
+  { name: 'Akamai', description: 'Internet delivery and security company known for CDN infrastructure.' },
+  { name: 'Fastly', description: 'Edge cloud and CDN company focused on programmable delivery.' },
+  { name: 'Okta', description: 'Identity and access management company for enterprise login flows.' },
+  { name: 'Auth0', description: 'Developer-focused authentication platform owned by Okta.' },
+  { name: 'Sentry', description: 'Application monitoring company known for error tracking.' },
+  { name: 'New Relic', description: 'Observability platform for application performance monitoring.' },
+  { name: 'Splunk', description: 'Data platform historically known for log search and security analytics.' },
+  { name: 'PagerDuty', description: 'Incident response and on-call management platform.' },
+  { name: 'Miro', description: 'Collaborative online whiteboard platform.' },
+  { name: 'DocuSign', description: 'Electronic signature and agreement workflow company.' },
+  { name: 'Box', description: 'Enterprise cloud content storage and collaboration platform.' },
+  { name: 'Proton', description: 'Privacy-focused company behind encrypted email and productivity tools.' },
+  { name: 'Discord', description: 'Community chat platform centered around servers, voice, and gaming groups.' },
+  { name: 'Telegram', description: 'Messaging platform known for large channels and bot support.' },
+  { name: 'Signal', description: 'Encrypted messaging app with a privacy-first reputation.' },
+  { name: 'Snap', description: 'Company behind Snapchat and camera-first social apps.' },
+  { name: 'Pinterest', description: 'Visual discovery and bookmarking social platform.' },
+  { name: 'Reddit', description: 'Community forum platform organized into topic-based subcommunities.' },
+  { name: 'X', description: 'Short-form social posting platform formerly known as Twitter.' },
+  { name: 'TikTok', description: 'Short-video social platform owned by ByteDance.' },
+  { name: 'Alibaba', description: 'Chinese tech giant spanning commerce, cloud, and digital services.' },
+  { name: 'Tencent', description: 'Chinese internet company behind WeChat, gaming, and investments.' },
+  { name: 'ByteDance', description: 'Technology company best known as the parent of TikTok.' },
+  { name: 'Samsung', description: 'Electronics and semiconductor company making phones, chips, and displays.' },
+  { name: 'Sony', description: 'Electronics and entertainment company behind PlayStation.' },
+  { name: 'Xiaomi', description: 'Consumer electronics company known for smartphones and smart devices.' },
+  { name: 'Lenovo', description: 'PC manufacturer known for ThinkPad laptops and enterprise hardware.' },
+  { name: 'Dell', description: 'Computer hardware company known for laptops, desktops, and servers.' },
+  { name: 'HP', description: 'PC and printer company serving consumer and enterprise markets.' },
+  { name: 'Logitech', description: 'Peripheral company known for keyboards, mice, and webcams.' },
+  { name: 'Arm', description: 'Chip architecture company licensing CPU designs used in many devices.' },
+  { name: 'Broadcom', description: 'Semiconductor and infrastructure software company.' },
+  { name: 'Palantir', description: 'Data integration and analytics company serving governments and enterprises.' },
+  { name: 'VMware', description: 'Virtualization and cloud infrastructure software company.' },
+  { name: 'Unity', description: 'Game engine company used for 2D and 3D interactive content.' },
+  { name: 'Epic Games', description: 'Game company behind Unreal Engine and Fortnite.' },
+  { name: 'Roblox', description: 'Gaming platform built around user-generated online experiences.' },
+  { name: 'Valve', description: 'Gaming company behind Steam and PC game distribution.' },
+  { name: 'Duolingo', description: 'Language learning app company with gamified lessons.' },
+  { name: 'Coursera', description: 'Online education platform offering university and career courses.' },
+  { name: 'Udemy', description: 'Marketplace for online video courses and technical learning.' },
+  { name: 'Coinbase', description: 'Cryptocurrency exchange and wallet company.' },
+  { name: 'Robinhood', description: 'Mobile-first investing app for stocks and crypto.' },
+  { name: 'Wise', description: 'Cross-border money transfer and multi-currency fintech company.' },
+  { name: 'Revolut', description: 'Fintech super-app for banking, cards, and international spending.' },
+];
+
+const CUSTOMER_NAMES = [
+  'Ava Chen',
+  'Leo Park',
+  'Maya Singh',
+  'Noah Kim',
+  'Zoe Martinez',
+  'Milo Brooks',
+  'Ivy Nguyen',
+  'Luca Rossi',
+  'Nina Patel',
+  'Owen Murphy',
+  'Jade Alvarez',
+  'Eli Cohen',
+  'Sana Rahman',
+  'Theo Johnson',
+  'Ruby Clark',
+  'Kai Rivera',
+  'Lena Fischer',
+  'Ethan Reed',
+  'Aria Hassan',
+  'Jonas Weber',
+  'Mina Sato',
+  'Felix Young',
+  'Amara Davis',
+  'Hugo Silva',
+  'Esme Torres',
+  'Caleb Fox',
+  'Layla Brown',
+  'Micah Evans',
+  'Priya Shah',
+  'Roman Bell',
+];
+
+const CUSTOMER_AVATARS = [
+  '🙂',
+  '😎',
+  '🤠',
+  '🧑‍💻',
+  '👩‍💼',
+  '🧑‍🚀',
+  '🧑‍🔬',
+  '🧑‍🎨',
+  '👨‍🔧',
+  '👩‍🚀',
+  '🧑‍🍳',
+  '👩‍🔬',
+  '👨‍💼',
+  '👩‍🏫',
+  '🧑‍🏫',
+  '👨‍🔬',
+  '👩‍💻',
+  '🧑‍🔧',
+  '👨‍🚀',
+  '👩‍🍳',
+  '🧑‍⚕️',
+  '👨‍⚕️',
+  '👩‍⚕️',
+  '🧑‍💼',
 ];
 
 const VALID_VERCEL_REGION_CODES = [
@@ -225,6 +403,32 @@ function buildMathRound(previous?: string): MathRound {
     operator,
     answer: operator === '+' ? left + right : left - right,
   };
+}
+
+function buildVendorRound(exceptName?: string): VendorRound {
+  const answerPool = exceptName
+    ? VENDOR_COMPANIES.filter(company => company.name !== exceptName)
+    : VENDOR_COMPANIES;
+  const answer = answerPool[randomIndex(answerPool.length)];
+  const options = [answer.name, ...VENDOR_COMPANIES
+    .filter(company => company.name !== answer.name)
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 2)
+    .map(company => company.name)]
+    .sort(() => Math.random() - 0.5);
+
+  return { answer, options };
+}
+
+function buildCustomerProfiles(): CustomerProfile[] {
+  const names = [...CUSTOMER_NAMES].sort(() => Math.random() - 0.5).slice(0, 3);
+  const avatars = [...CUSTOMER_AVATARS].sort(() => Math.random() - 0.5).slice(0, 3);
+
+  return names.map((name, index) => ({
+    id: `customer-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+    name,
+    avatar: avatars[index % avatars.length],
+  }));
 }
 
 function GuessTheCountryGame({ onResolve }: { onResolve: () => void }) {
@@ -501,55 +705,197 @@ function MathGame({ onResolve }: { onResolve: () => void }) {
 }
 
 function MonkeyTypeGame({ onResolve }: { onResolve: () => void }) {
-  const [snippet, setSnippet] = useState(() => CODE_SNIPPETS[randomIndex(CODE_SNIPPETS.length)]);
-  const [value, setValue] = useState('');
-  const [status, setStatus] = useState<'idle' | 'wrong'>('idle');
+  const [snippet] = useState(() => CODE_SNIPPETS[randomIndex(CODE_SNIPPETS.length)]);
+  const [typed, setTyped] = useState('');
+  const [focused, setFocused] = useState(true);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (status !== 'wrong') {
-      return;
-    }
+    inputRef.current?.focus();
+  }, []);
 
-    const timeout = window.setTimeout(() => setStatus('idle'), 520);
-    return () => window.clearTimeout(timeout);
-  }, [status]);
-
-  const submitValue = () => {
-    const normalizedInput = value.replace(/\r\n/g, '\n');
-    const normalizedSnippet = snippet.replace(/\r\n/g, '\n');
-
-    if (normalizedInput === normalizedSnippet) {
+  useEffect(() => {
+    if (typed === snippet) {
       onResolve();
-      return;
     }
-
-    setStatus('wrong');
-  };
+  }, [onResolve, snippet, typed]);
 
   return (
     <div className="mini-shell mini-shell-monkeytype">
       <div className="mini-callout mini-callout-monkeytype">
-        Type the snippet exactly and submit to pass.
+        Type through the snippet character by character.
       </div>
 
-      <div className="typing-board">
-        <pre className="typing-snippet">{snippet}</pre>
+      <div
+        className={`typing-board typing-board-live${focused ? ' focused' : ''}`}
+        onClick={() => inputRef.current?.focus()}
+        role="presentation"
+      >
+        <div className="typing-stream" aria-label="Typing target">
+          {snippet.split('').map((char, index) => {
+            const typedChar = typed[index];
+            const isCurrent = index === typed.length;
+            const isCorrect = typedChar === char;
+            const isWrong = typedChar !== undefined && typedChar !== char;
 
-        <textarea
-          className={`typing-input${status === 'wrong' ? ' wrong' : ''}`}
-          onChange={event => setValue(event.target.value)}
-          placeholder="type the snippet exactly"
+            return (
+              <span
+                className={[
+                  'typing-char',
+                  isCurrent ? 'current' : '',
+                  isCorrect ? 'correct' : '',
+                  isWrong ? 'wrong' : '',
+                ].filter(Boolean).join(' ')}
+                key={`${char}-${index}`}
+              >
+                {char === ' ' ? '\u00A0' : char}
+              </span>
+            );
+          })}
+        </div>
+
+        <input
+          autoCapitalize="none"
+          autoCorrect="off"
+          className="typing-hidden-input"
+          onBlur={() => setFocused(false)}
+          onChange={event => {
+            const next = event.target.value.slice(0, snippet.length);
+            setTyped(next);
+          }}
+          onFocus={() => setFocused(true)}
+          onPaste={event => event.preventDefault()}
+          ref={inputRef}
           spellCheck={false}
-          value={value}
+          type="text"
+          value={typed}
         />
 
         <div className="typing-actions">
-          <div className="typing-meta">{CODE_SNIPPETS.length} snippets in rotation</div>
-          <button className="typing-submit" onClick={submitValue} type="button">
-            Submit
-          </button>
+          <div className="typing-meta">
+            {typed.length}/{snippet.length} chars
+          </div>
+          <div className="typing-meta">Paste disabled</div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function MatchTheVendorGame({ onResolve }: { onResolve: () => void }) {
+  const [round, setRound] = useState<VendorRound>(() => buildVendorRound());
+
+  return (
+    <div className="mini-shell mini-shell-vendor-match">
+      <div className="mini-callout mini-callout-vendor-match">
+        Match the vendor to the company description.
+      </div>
+
+      <div className="vendor-match-card">
+        <div className="vendor-match-kicker">Description</div>
+        <p className="vendor-match-copy">{round.answer.description}</p>
+      </div>
+
+      <div className="vendor-match-grid">
+        {round.options.map(option => (
+          <button
+            className="vendor-match-choice"
+            key={`${round.answer.name}-${option}`}
+            onClick={() => {
+              if (option === round.answer.name) {
+                onResolve();
+                return;
+              }
+
+              setRound(buildVendorRound(round.answer.name));
+            }}
+            type="button"
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MatchTheCustomerGame({ onResolve }: { onResolve: () => void }) {
+  const [profiles, setProfiles] = useState<CustomerProfile[]>(() => buildCustomerProfiles());
+  const [phase, setPhase] = useState<'memorize' | 'quiz'>('memorize');
+  const [questionIndex, setQuestionIndex] = useState(() => randomIndex(3));
+
+  useEffect(() => {
+    if (phase !== 'memorize') {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setQuestionIndex(randomIndex(profiles.length));
+      setPhase('quiz');
+    }, 5000);
+
+    return () => window.clearTimeout(timeout);
+  }, [phase, profiles]);
+
+  const answer = profiles[questionIndex];
+
+  return (
+    <div className="mini-shell mini-shell-customer-match">
+      <div className="mini-callout mini-callout-customer-match">
+        {phase === 'memorize' ? 'Memorize the customers before the names disappear.' : 'Which name matches this customer?'}
+      </div>
+
+      {phase === 'memorize' ? (
+        <div className="customer-memory-board">
+          <div className="customer-memory-head">
+            <span>Study phase</span>
+            <span>5 seconds</span>
+          </div>
+
+          <div className="customer-memory-grid">
+            {profiles.map(profile => (
+              <div className="customer-memory-card" key={profile.id}>
+                <div className="customer-memory-avatar" aria-hidden="true">
+                  {profile.avatar}
+                </div>
+                <div className="customer-memory-name">{profile.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="customer-quiz-board">
+          <div className="customer-quiz-card">
+            <div className="customer-quiz-kicker">Customer</div>
+            <div className="customer-quiz-avatar" aria-hidden="true">
+              {answer.avatar}
+            </div>
+          </div>
+
+          <div className="customer-name-grid">
+            {profiles.map(profile => (
+              <button
+                className="customer-name-choice"
+                key={`${answer.id}-${profile.id}`}
+                onClick={() => {
+                  if (profile.id === answer.id) {
+                    onResolve();
+                    return;
+                  }
+
+                  const nextProfiles = buildCustomerProfiles();
+                  setProfiles(nextProfiles);
+                  setQuestionIndex(randomIndex(nextProfiles.length));
+                  setPhase('memorize');
+                }}
+                type="button"
+              >
+                {profile.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -859,6 +1205,8 @@ const IMPLEMENTED_MINIGAMES = new Set<MiniGameId>([
   'guess-the-country',
   'guess-the-hex',
   'math',
+  'match-the-customer',
+  'match-the-vendor',
   'monkey-type',
   'name-five-aws-region',
 ]);
@@ -897,6 +1245,14 @@ export function MiniGamePanel({
 
   if (miniGameId === 'monkey-type') {
     return <MonkeyTypeGame onResolve={onResolve} />;
+  }
+
+  if (miniGameId === 'match-the-vendor') {
+    return <MatchTheVendorGame onResolve={onResolve} />;
+  }
+
+  if (miniGameId === 'match-the-customer') {
+    return <MatchTheCustomerGame onResolve={onResolve} />;
   }
 
   return null;
