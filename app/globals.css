@@ -285,11 +285,57 @@ button {
 
 .top-rail {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr 0.8fr;
-  gap: 14px;
-  align-items: stretch;
+  gap: 10px;
   margin-bottom: 14px;
   flex-shrink: 0;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px;
+}
+
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.top-name {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.top-timer {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.valuation-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.valuation-card {
+  padding: 10px 14px;
+  display: grid;
+  gap: 6px;
+  overflow: hidden;
 }
 
 .station,
@@ -3680,7 +3726,6 @@ button {
 }
 
 @media (max-width: 960px) {
-  .top-rail,
   .prompt-overlay,
   .mini-grid,
   .landing-cards,
@@ -3690,35 +3735,66 @@ button {
 
   .command-board {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(3, auto);
     gap: 8px;
   }
 
-  .button-caption {
-    font-size: 12px;
-  }
-
-  .button-panel {
-    padding: 8px 10px;
+  .button-card {
+    padding: 6px;
+    gap: 4px;
   }
 
   .control-button {
-    width: 60px;
-    height: 60px;
+    min-height: 100px;
+    border-width: 2px;
+    border-radius: 18px;
+    padding: 10px 8px;
   }
 
-  .button-card {
-    padding: 8px 8px 10px;
-    gap: 6px;
+  .control-button .control-face {
+    gap: 4px;
+  }
+
+  .control-button .control-face-label {
+    font-size: 11px;
+  }
+
+  .button-caption {
+    font-size: 11px;
+  }
+
+  .button-panel {
+    padding: 6px 8px;
+  }
+
+  .top-name {
+    font-size: 12px;
+  }
+
+  .top-timer {
+    font-size: 16px;
   }
 
   .room-shell {
     height: auto;
     min-height: 100dvh;
+    padding: 10px;
+  }
+
+  .room-shell.station-shell {
+    width: 100%;
   }
 
   .station-body {
     overflow-y: visible;
+  }
+
+  .prompt-banner {
+    height: 100px;
+    padding: 10px 12px;
+  }
+
+  .prompt-title {
+    font-size: 14px;
   }
 
   .mini-backdrop {

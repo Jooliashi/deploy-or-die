@@ -881,38 +881,29 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   return (
     <main className="panel room-shell station-shell role-theme">
       <section className="top-rail">
-        <div className="pilot-card">
-          <div className="pilot-row">
-            <span className="eyebrow">Room {displayCode}</span>
-          </div>
-          <h2 style={{ marginTop: 8 }}>{playerName}</h2>
-          <div className="tag-row">
-            <span className="tag">station live</span>
+        <div className="top-bar">
+          <div className="top-bar-left">
+            <span className="top-name">{playerName}</span>
             <span className="tag">level {state.deploy.currentLevel}</span>
-            <span className="tag">{controls.length} controls</span>
+          </div>
+          <div className="top-bar-right">
+            <span className="top-timer">
+              {Math.floor(state.deploy.timeRemainingSeconds / 60)}:{String(state.deploy.timeRemainingSeconds % 60).padStart(2, '0')}
+            </span>
           </div>
         </div>
 
-        <div className="panel-muted stat-card compact-stat valuation-card">
-          <div className="status-head">
-            <div className={`signal ${trending === 'up' ? 'good' : 'danger'}`} />
-            <div className="stat-label">Valuation</div>
+        <div className="panel-muted valuation-card">
+          <div className="valuation-row">
+            <div className="status-head">
+              <div className={`signal ${trending === 'up' ? 'good' : 'danger'}`} />
+              <div className="stat-label">Valuation</div>
+            </div>
+            <div className={`stat-value valuation-value ${trending}`}>
+              {formatValuation(valuation)}
+            </div>
           </div>
-          <div className={`stat-value valuation-value ${trending}`}>
-            {formatValuation(valuation)}
-          </div>
-          <Sparkline data={valuationHistory} height={36} />
-        </div>
-
-        <div className="panel-muted stat-card compact-stat">
-          <div className="status-head">
-            <div className="signal warn" />
-            <div className="stat-label">Time</div>
-          </div>
-          <div className="stat-value" style={{ fontSize: 22 }}>
-            {Math.floor(state.deploy.timeRemainingSeconds / 60)}:{String(state.deploy.timeRemainingSeconds % 60).padStart(2, '0')}
-          </div>
-          <div className="count-chip">{allLiveCount} live tasks</div>
+          <Sparkline data={valuationHistory} height={32} />
         </div>
       </section>
 
