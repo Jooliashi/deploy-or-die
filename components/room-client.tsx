@@ -5,7 +5,7 @@ import { DemoControlPicker } from '@/components/demo-control-picker';
 import { hasMiniGame, MiniGamePanel } from '@/components/minigames';
 import { Sparkline } from '@/components/sparkline';
 import { WaitingRoom } from '@/components/waiting-room';
-import { roles } from '@/lib/game/data';
+import { LEVELS, roles } from '@/lib/game/data';
 import type { ControlDefinition, PromptDefinition } from '@/lib/game/types';
 import { Group } from 'jazz-tools';
 import {
@@ -49,6 +49,7 @@ type ControlSkin =
   | 'social'
   | 'reply'
   | 'vendor'
+  | 'it'
   | 'broadcast';
 
 /** Display label for a control button. The labels from data.ts are already
@@ -100,6 +101,8 @@ function getControlSkin(control: string): ControlSkin {
       return 'vendor';
     case 'Status Page':
       return 'chart';
+    case 'IT':
+      return 'it';
     default:
       return 'broadcast';
   }
@@ -137,6 +140,8 @@ function getControlCodes(skin: ControlSkin): [string, string] {
       return ['CS', '14'];
     case 'vendor':
       return ['VN', '15'];
+    case 'it':
+      return ['IT', '17'];
     default:
       return ['HT', '16'];
   }
@@ -334,6 +339,18 @@ function ControlFace({ skin, label, hasPrompt }: { skin: ControlSkin; label: str
           <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
         </div>
       );
+    case 'it':
+      return (
+        <div className="control-face control-face-it">
+          <div className={`it-console${hasPrompt ? ' active' : ''}`}>
+            <span className="it-screen" />
+            <span className="it-base" />
+            <span className="it-badge" />
+          </div>
+          <div className="face-label">{label}</div>
+          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+        </div>
+      );
     default:
       return (
         <div className="control-face control-face-broadcast">
@@ -418,7 +435,8 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   // Get this player's controls from the shared state (assigned by host on
   // game start). In demo, use the user's chosen set. Falls back to empty.
   const stateControls = state?.players.find(p => p.id === playerId)?.controls ?? [];
-  const controls = demoControls ?? (stateControls.length > 0 ? stateControls : []);
+  const levelConfig = state ? LEVELS[Math.max(0, Math.min(state.deploy.currentLevel - 1, LEVELS.length - 1))] : LEVELS[0];
+  const controls = (demoControls ?? (stateControls.length > 0 ? stateControls : [])).slice(0, levelConfig.buttonCount);
   const openControlDefinition = openSubControl ? getControlDefinition(openSubControl) : undefined;
 
   // Async load for multiplayer rooms.
@@ -678,6 +696,54 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     );
   }
 
+  const meReady = state.players.find(p => p.id === playerId)?.ready ?? false;
+  const readyCount = state.players.filter(p => p.ready).length;
+  const playerCount = state.players.length;
+
+  if (state.deploy.levelPhase === 'briefing') {
+    return (
+      <main className="panel room-shell waiting-shell">
+        <div className="waiting-content level-briefing-content">
+          <div className="waiting-header">
+            <span className="eyebrow">Level {state.deploy.currentLevel}</span>
+            <h1 className="waiting-title">Prepare the Stack</h1>
+            <p className="waiting-sub">
+              Survive this round with {levelConfig.buttonCount} controls for {Math.floor(levelConfig.durationSeconds / 60)} minute{levelConfig.durationSeconds >= 120 ? 's' : ''}.
+            </p>
+          </div>
+
+          <div className="level-briefing-stats">
+            <div className="panel-muted level-briefing-card">
+              <span className="stat-label">Controls</span>
+              <strong>{levelConfig.buttonCount}</strong>
+            </div>
+            <div className="panel-muted level-briefing-card">
+              <span className="stat-label">Timer</span>
+              <strong>{Math.floor(levelConfig.durationSeconds / 60)}:{String(levelConfig.durationSeconds % 60).padStart(2, '0')}</strong>
+            </div>
+            <div className="panel-muted level-briefing-card">
+              <span className="stat-label">Ready</span>
+              <strong>{readyCount}/{playerCount}</strong>
+            </div>
+          </div>
+
+          <div className="level-briefing-actions">
+            <div className="callout panel-muted">
+              Click ready to start Level {state.deploy.currentLevel}.
+            </div>
+            <button
+              className={`button waiting-launch${meReady ? ' waiting-ready-active' : ''}`}
+              onClick={() => adapter.toggleReady(playerId)}
+              type="button"
+            >
+              {meReady ? 'Not Ready' : 'Ready'}
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   // "Started" prompts have createdAt > 0 (activated by the host).
   // Prompts with createdAt = 0 are waiting in the queue.
   const startedPrompts = state.deploy.prompts.filter(
@@ -724,6 +790,23 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     );
   }
 
+  if (state.deploy.levelPhase === 'complete') {
+    return (
+      <main className="panel room-shell game-over-shell">
+        <div className="game-over-content">
+          <span className="eyebrow">Victory</span>
+          <h1 className="game-over-title">DEPLOYED</h1>
+          <p className="game-over-sub">
+            The team survived all {LEVELS.length} levels and got the app into production.
+          </p>
+          <div className="cta-row" style={{ justifyContent: 'center' }}>
+            <a className="button" href="/">Back to Lobby</a>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   const displayCode = roomCode.length > 12
     ? `${roomCode.slice(0, 6)}...${roomCode.slice(-4)}`
     : roomCode;
@@ -738,6 +821,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
           <h2 style={{ marginTop: 8 }}>{playerName}</h2>
           <div className="tag-row">
             <span className="tag">station live</span>
+            <span className="tag">level {state.deploy.currentLevel}</span>
             <span className="tag">{controls.length} controls</span>
           </div>
         </div>

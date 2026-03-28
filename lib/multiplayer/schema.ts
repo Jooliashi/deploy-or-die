@@ -24,8 +24,12 @@ export const JazzDeployState = co.map({
   roomCode: z.string(),
   valuation: z.number(),
   valuationHistory: JazzValuationHistory,
+  currentLevel: z.number(),
+  levelPhase: z.string(),
   timeRemainingSeconds: z.number(),
   prompts: JazzPromptList,
+  consecutiveFailures: z.number(),
+  failureThreshold: z.number(),
   bankrupt: z.boolean(),
 });
 

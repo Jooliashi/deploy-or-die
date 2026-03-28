@@ -115,6 +115,12 @@ interface CustomerProfile {
   avatar: string;
 }
 
+interface MazeState {
+  rows: string[];
+  start: { x: number; y: number };
+  goal: { x: number; y: number };
+}
+
 const CODE_SNIPPETS = [
   "const deploy = await ship({ target: 'production' });",
   "export const runtime = 'edge';",
@@ -429,6 +435,26 @@ function buildCustomerProfiles(): CustomerProfile[] {
     name,
     avatar: avatars[index % avatars.length],
   }));
+}
+
+function buildMaze(): MazeState {
+  const rows = [
+    '#########',
+    '#S  #   #',
+    '# # # # #',
+    '# #   # #',
+    '# ### # #',
+    '#   #   #',
+    '### ### #',
+    '#      G#',
+    '#########',
+  ];
+
+  return {
+    rows,
+    start: { x: 1, y: 1 },
+    goal: { x: 7, y: 7 },
+  };
 }
 
 function GuessTheCountryGame({ onResolve }: { onResolve: () => void }) {
@@ -900,6 +926,95 @@ function MatchTheCustomerGame({ onResolve }: { onResolve: () => void }) {
   );
 }
 
+function ItMazeGame({ onResolve }: { onResolve: () => void }) {
+  const [maze] = useState<MazeState>(() => buildMaze());
+  const [position, setPosition] = useState(maze.start);
+  const [wrongBump, setWrongBump] = useState(false);
+
+  useEffect(() => {
+    setPosition(maze.start);
+  }, [maze]);
+
+  useEffect(() => {
+    if (position.x === maze.goal.x && position.y === maze.goal.y) {
+      onResolve();
+    }
+  }, [maze.goal.x, maze.goal.y, onResolve, position.x, position.y]);
+
+  useEffect(() => {
+    const move = (dx: number, dy: number) => {
+      setPosition(current => {
+        const nextX = current.x + dx;
+        const nextY = current.y + dy;
+        const nextCell = maze.rows[nextY]?.[nextX];
+
+        if (!nextCell || nextCell === '#') {
+          setWrongBump(true);
+          window.setTimeout(() => setWrongBump(false), 140);
+          return current;
+        }
+
+        return { x: nextX, y: nextY };
+      });
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        move(0, -1);
+      } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        move(0, 1);
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        move(-1, 0);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        move(1, 0);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [maze.rows]);
+
+  return (
+    <div className="mini-shell mini-shell-it-maze">
+      <div className="mini-callout mini-callout-it-maze">
+        Use the arrow keys to route the request through IT.
+      </div>
+
+      <div className={`it-maze-board${wrongBump ? ' bumped' : ''}`}>
+        <div className="it-maze-head">
+          <span>Start</span>
+          <span>Arrow keys only</span>
+          <span>Goal</span>
+        </div>
+        <div className="it-maze-grid" aria-label="IT support labyrinth">
+          {maze.rows.map((row, y) =>
+            row.split('').map((cell, x) => {
+              const isPlayer = position.x === x && position.y === y;
+              const className = [
+                'it-maze-cell',
+                cell === '#' ? 'wall' : 'path',
+                cell === 'S' ? 'start' : '',
+                cell === 'G' ? 'goal' : '',
+                isPlayer ? 'player' : '',
+              ].filter(Boolean).join(' ');
+
+              return (
+                <div className={className} key={`${x}-${y}`}>
+                  {cell === 'S' ? 'S' : cell === 'G' ? 'E' : isPlayer ? '●' : ''}
+                </div>
+              );
+            }),
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface BugSprite {
   id: string;
   x: number;
@@ -1204,6 +1319,7 @@ const IMPLEMENTED_MINIGAMES = new Set<MiniGameId>([
   'find-the-logs',
   'guess-the-country',
   'guess-the-hex',
+  'it-maze',
   'math',
   'match-the-customer',
   'match-the-vendor',
@@ -1253,6 +1369,10 @@ export function MiniGamePanel({
 
   if (miniGameId === 'match-the-customer') {
     return <MatchTheCustomerGame onResolve={onResolve} />;
+  }
+
+  if (miniGameId === 'it-maze') {
+    return <ItMazeGame onResolve={onResolve} />;
   }
 
   return null;

@@ -1,4 +1,4 @@
-import { demoDeployState } from '@/lib/game/data';
+import { demoDeployState, LEVELS } from '@/lib/game/data';
 import type { MultiplayerAdapter, SharedRoomState } from '@/lib/multiplayer/types';
 
 const initialState: SharedRoomState = {
@@ -47,11 +47,47 @@ export class MockMultiplayerAdapter implements MultiplayerAdapter {
         p.id === playerId ? { ...p, ready: !p.ready } : p,
       ),
     };
+
+    const allReady = this.#state.players.length > 0 && this.#state.players.every(p => p.ready);
+    if (!this.#state.gameStarted && allReady) {
+      this.#state = {
+        ...this.#state,
+        gameStarted: true,
+        players: this.#state.players.map(p => ({ ...p, ready: false })),
+        deploy: {
+          ...this.#state.deploy,
+          currentLevel: 1,
+          levelPhase: 'briefing',
+          timeRemainingSeconds: LEVELS[0].durationSeconds,
+        },
+      };
+    } else if (this.#state.gameStarted && this.#state.deploy.levelPhase === 'briefing' && allReady) {
+      const levelIndex = Math.max(0, this.#state.deploy.currentLevel - 1);
+      this.#state = {
+        ...this.#state,
+        players: this.#state.players.map(p => ({ ...p, ready: false })),
+        deploy: {
+          ...this.#state.deploy,
+          levelPhase: 'playing',
+          timeRemainingSeconds: LEVELS[levelIndex].durationSeconds,
+        },
+      };
+    }
+
     this.#emit();
   }
 
   startGame() {
-    this.#state = { ...this.#state, gameStarted: true };
+    this.#state = {
+      ...this.#state,
+      gameStarted: true,
+      deploy: {
+        ...this.#state.deploy,
+        currentLevel: 1,
+        levelPhase: 'briefing',
+        timeRemainingSeconds: LEVELS[0].durationSeconds,
+      },
+    };
     this.#emit();
   }
 
@@ -76,6 +112,7 @@ export class MockMultiplayerAdapter implements MultiplayerAdapter {
         ...this.#state.deploy,
         valuation: newVal,
         valuationHistory: [...this.#state.deploy.valuationHistory, newVal],
+        consecutiveFailures: 0,
         prompts: this.#state.deploy.prompts.map(prompt =>
           prompt.id === promptId ? { ...prompt, status: 'resolved' } : prompt
         ),
@@ -85,14 +122,18 @@ export class MockMultiplayerAdapter implements MultiplayerAdapter {
   }
 
   failPrompt(promptId: string) {
-    const newVal = Math.max(this.#state.deploy.valuation - 120_000, 0);
+    const newVal = Math.max(this.#state.deploy.valuation - 200_000, 0);
+    const failureThreshold = Math.max(3, this.#state.players.length + 1);
+    const consecutiveFailures = this.#state.deploy.consecutiveFailures + 1;
     this.#state = {
       ...this.#state,
       deploy: {
         ...this.#state.deploy,
         valuation: newVal,
         valuationHistory: [...this.#state.deploy.valuationHistory, newVal],
-        bankrupt: newVal <= 0,
+        consecutiveFailures,
+        failureThreshold,
+        bankrupt: newVal <= 0 || consecutiveFailures >= failureThreshold,
         prompts: this.#state.deploy.prompts.map(prompt =>
           prompt.id === promptId ? { ...prompt, status: 'failed' } : prompt
         ),
@@ -102,7 +143,7 @@ export class MockMultiplayerAdapter implements MultiplayerAdapter {
   }
 
   misfireControl(_playerId: string, _controlLabel: string) {
-    const newVal = Math.max(this.#state.deploy.valuation - 20_000, 0);
+    const newVal = Math.max(this.#state.deploy.valuation - 50_000, 0);
     this.#state = {
       ...this.#state,
       deploy: {

@@ -1,6 +1,7 @@
 export type RoleId = 'frontend' | 'backend' | 'database' | 'success';
 
 export type MiniGameId = string;
+export type LevelPhase = 'briefing' | 'playing' | 'complete';
 
 export type PromptStatus = 'queued' | 'active' | 'resolved' | 'failed' | 'expired';
 
@@ -42,8 +43,12 @@ export interface DeployState {
   valuation: number;
   /** Recent valuation snapshots for the stock chart (one per tick). */
   valuationHistory: number[];
+  currentLevel: number;
+  levelPhase: LevelPhase;
   timeRemainingSeconds: number;
   prompts: PromptDefinition[];
+  consecutiveFailures: number;
+  failureThreshold: number;
   /** True once valuation hits 0 — game over. */
   bankrupt: boolean;
 }

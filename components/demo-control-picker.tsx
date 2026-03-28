@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react';
 import { roles } from '@/lib/game/data';
 
-const TARGET_COUNT = 6;
+const TARGET_COUNT = 5;
 
 /** Flat list of all available control labels. */
 const allControls = roles.flatMap(role =>

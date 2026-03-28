@@ -14,6 +14,12 @@ interface FlattenedPromptTemplate extends PromptTemplateDefinition {
   miniGameId: PromptDefinition['miniGameId'];
 }
 
+export const LEVELS = [
+  { level: 1, buttonCount: 3, durationSeconds: 60 },
+  { level: 2, buttonCount: 4, durationSeconds: 120 },
+  { level: 3, buttonCount: 5, durationSeconds: 180 },
+] as const;
+
 function formatSubControlLabel(key: string): string {
   return key
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
@@ -222,6 +228,16 @@ export const roles: RoleDefinition[] = [
           ],
         },
       },
+      {
+        label: 'IT',
+        miniGameId: 'it-maze',
+        subControls: {
+          default: [
+            { label: 'Someone on the team needs a new laptop before the next deploy', timerSeconds: 16 },
+            { label: 'A teammate requested admin access on their workstation', timerSeconds: 18 },
+          ],
+        },
+      },
     ],
   },
 ];
@@ -285,7 +301,11 @@ export const demoDeployState: DeployState = {
   roomCode: 'SHIP-42',
   valuation: STARTING_VALUATION,
   valuationHistory: [STARTING_VALUATION],
-  timeRemainingSeconds: 180,
+  currentLevel: 1,
+  levelPhase: 'briefing',
+  timeRemainingSeconds: LEVELS[0].durationSeconds,
   prompts: [],
+  consecutiveFailures: 0,
+  failureThreshold: 3,
   bankrupt: false,
 };

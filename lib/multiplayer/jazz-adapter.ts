@@ -1,6 +1,6 @@
 import { co, Group, type ID } from 'jazz-tools';
-import { demoDeployState, pickRandomPrompts, promptPool, roles, STARTING_VALUATION } from '@/lib/game/data';
-import type { DeployState, PromptDefinition, PromptStatus } from '@/lib/game/types';
+import { demoDeployState, LEVELS, pickRandomPrompts, promptPool, roles, STARTING_VALUATION } from '@/lib/game/data';
+import type { DeployState, LevelPhase, PromptDefinition, PromptStatus } from '@/lib/game/types';
 import {
   JazzControlList,
   JazzDeployState,
@@ -29,7 +29,7 @@ type LoadedJazzRoom = co.loaded<typeof JazzRoom, typeof ROOM_RESOLVE>;
 const ALL_CONTROL_LABELS = [...new Set(promptPool.map(t => t.actionLabel))];
 
 /** Number of controls each player gets. */
-const CONTROLS_PER_PLAYER = 6;
+const CONTROLS_PER_PLAYER = LEVELS[LEVELS.length - 1].buttonCount;
 
 let promptCounter = 0;
 
@@ -42,11 +42,23 @@ export const MAX_VISIBLE_ALERTS = 1;
 const QUEUE_DEPTH = 5;
 const MIN_PROMPT_TIMER_SECONDS = 30;
 const EXTRA_SECONDS_PER_ADDITIONAL_PLAYER = 5;
+const RESOLVE_VALUATION_DELTA = 50_000;
+const FAIL_VALUATION_DELTA = -200_000;
+const EXPIRE_VALUATION_DELTA = -150_000;
+const MISFIRE_VALUATION_DELTA = -50_000;
 
 function scalePromptTimer(timerSeconds: number, playerCount: number): number {
   const base = Math.max(timerSeconds, MIN_PROMPT_TIMER_SECONDS);
   const extraPlayers = Math.max(0, playerCount - 2);
   return base + extraPlayers * EXTRA_SECONDS_PER_ADDITIONAL_PLAYER;
+}
+
+function getFailureThreshold(playerCount: number): number {
+  return Math.max(3, playerCount + 1);
+}
+
+function getLevelConfig(level: number) {
+  return LEVELS[Math.max(0, Math.min(level - 1, LEVELS.length - 1))];
 }
 
 function coRoomToState(room: LoadedJazzRoom): SharedRoomState {
@@ -67,8 +79,12 @@ function coRoomToState(room: LoadedJazzRoom): SharedRoomState {
     roomCode: room.deploy.roomCode,
     valuation: room.deploy.valuation,
     valuationHistory: [...room.deploy.valuationHistory],
+    currentLevel: room.deploy.currentLevel,
+    levelPhase: room.deploy.levelPhase as LevelPhase,
     timeRemainingSeconds: room.deploy.timeRemainingSeconds,
     prompts,
+    consecutiveFailures: room.deploy.consecutiveFailures,
+    failureThreshold: room.deploy.failureThreshold,
     bankrupt: room.deploy.bankrupt,
   };
 
@@ -144,7 +160,7 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     const player = this.#room.players.find(p => p.playerId === playerId);
     if (player) {
       player.$jazz.set('ready', !player.ready);
-      this.#checkAutoStart();
+      this.#checkProgressionReady();
     }
   }
 
@@ -156,9 +172,9 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
   }
 
   startGame(): void {
-    // Distribute controls evenly among players before starting.
     if (this.#isHost) {
       this.#distributeControls();
+      this.#setLevelBriefing(1);
     }
     this.#room.$jazz.set('gameStarted', true);
   }
@@ -204,8 +220,9 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     const prompt = this.#room.deploy.prompts.find(p => p.promptId === promptId);
     if (prompt) {
       prompt.$jazz.set('status', 'resolved');
-      this.#adjustValuation(50_000);
-      if (this.#isHost) {
+      this.#room.deploy.$jazz.set('consecutiveFailures', 0);
+      this.#adjustValuation(RESOLVE_VALUATION_DELTA);
+      if (this.#isHost && this.#room.deploy.levelPhase === 'playing') {
         // Immediately activate the next queued prompt so there's zero gap.
         this.#activateNextPrompts();
         this.#spawnIfNeeded();
@@ -217,8 +234,9 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     const prompt = this.#room.deploy.prompts.find(p => p.promptId === promptId);
     if (prompt) {
       prompt.$jazz.set('status', 'failed');
-      this.#adjustValuation(-120_000);
-      if (this.#isHost) {
+      this.#recordFailure();
+      this.#adjustValuation(FAIL_VALUATION_DELTA);
+      if (this.#isHost && this.#room.deploy.levelPhase === 'playing') {
         this.#activateNextPrompts();
         this.#spawnIfNeeded();
       }
@@ -226,8 +244,8 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
   }
 
   misfireControl(_playerId: string, _controlLabel: string): void {
-    this.#adjustValuation(-20_000);
-    if (this.#isHost) {
+    this.#adjustValuation(MISFIRE_VALUATION_DELTA);
+    if (this.#isHost && this.#room.deploy.levelPhase === 'playing') {
       this.#activateNextPrompts();
       this.#spawnIfNeeded();
     }
@@ -254,12 +272,22 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     }
   }
 
+  #recordFailure(): void {
+    const threshold = getFailureThreshold(Math.max(this.#room.players.length, 1));
+    this.#room.deploy.$jazz.set('failureThreshold', threshold);
+    const nextFailures = this.#room.deploy.consecutiveFailures + 1;
+    this.#room.deploy.$jazz.set('consecutiveFailures', nextFailures);
+    if (nextFailures >= threshold && !this.#room.deploy.bankrupt) {
+      this.#room.deploy.$jazz.set('bankrupt', true);
+    }
+  }
+
   #tick(): void {
     if (!this.#room.gameStarted || this.#room.deploy.bankrupt) return;
+    if (this.#room.deploy.levelPhase !== 'playing') return;
 
     const now = Date.now();
     let valuationDelta = 0;
-    let expired = false;
 
     for (let i = 0; i < this.#room.deploy.prompts.length; i++) {
       const p = this.#room.deploy.prompts[i];
@@ -269,8 +297,8 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
       const elapsed = (now - p.createdAt) / 1000;
       if (elapsed >= p.timerSeconds) {
         p.$jazz.set('status', 'expired');
-        valuationDelta -= 80_000;
-        expired = true;
+        this.#recordFailure();
+        valuationDelta += EXPIRE_VALUATION_DELTA;
       }
     }
 
@@ -287,10 +315,12 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     }
 
     if (this.#room.deploy.timeRemainingSeconds > 0) {
-      this.#room.deploy.$jazz.set(
-        'timeRemainingSeconds',
-        this.#room.deploy.timeRemainingSeconds - 1,
-      );
+      const nextTime = this.#room.deploy.timeRemainingSeconds - 1;
+      this.#room.deploy.$jazz.set('timeRemainingSeconds', nextTime);
+      if (nextTime <= 0) {
+        this.#completeCurrentLevel();
+        return;
+      }
     }
 
     // Activate next prompts for any player that has no visible task.
@@ -308,18 +338,21 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
 
     const isDemo = !!this.#playerControls;
     const scaledPlayerCount = Math.max(players.length, 1);
+    const activeButtonCount = getLevelConfig(this.#room.deploy.currentLevel).buttonCount;
+    this.#room.deploy.$jazz.set('failureThreshold', getFailureThreshold(scaledPlayerCount));
 
     // Collect all controls across all players (for cross-player assignment).
     const allPlayerControls = new Set<string>();
     for (let i = 0; i < players.length; i++) {
-      for (let j = 0; j < players[i].controls.length; j++) {
-        allPlayerControls.add(players[i].controls[j]);
+      const visibleControls = [...players[i].controls].slice(0, activeButtonCount);
+      for (let j = 0; j < visibleControls.length; j++) {
+        allPlayerControls.add(visibleControls[j]);
       }
     }
 
     for (let pi = 0; pi < players.length; pi++) {
       const player = players[pi];
-      const playerCtrls = [...player.controls];
+      const playerCtrls = [...player.controls].slice(0, activeButtonCount);
 
       // Pipeline = all queued/active prompts for this player.
       const pipeline = this.#room.deploy.prompts.filter(
@@ -368,7 +401,7 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     if (isDemo) {
       // Demo: player sees tasks for their own controls.
       pool = this.#playerControls
-        ? promptPool.filter(t => this.#playerControls!.includes(t.actionLabel))
+        ? promptPool.filter(t => this.#playerControls!.slice(0, getLevelConfig(this.#room.deploy.currentLevel).buttonCount).includes(t.actionLabel))
         : promptPool;
     } else {
       // Multiplayer: pick prompts for controls this player does NOT have
@@ -423,15 +456,67 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     }
   }
 
-  /** Auto-start the game when >= 2 players and all are ready. */
-  #checkAutoStart(): void {
-    if (this.#room.gameStarted) return;
+  #clearPrompts(): void {
+    while (this.#room.deploy.prompts.length > 0) {
+      this.#room.deploy.prompts.$jazz.splice(0, 1);
+    }
+  }
+
+  #resetReady(): void {
+    for (let i = 0; i < this.#room.players.length; i++) {
+      this.#room.players[i].$jazz.set('ready', false);
+    }
+  }
+
+  #setLevelBriefing(level: number): void {
+    const config = getLevelConfig(level);
+    this.#clearPrompts();
+    this.#room.deploy.$jazz.set('currentLevel', config.level);
+    this.#room.deploy.$jazz.set('levelPhase', 'briefing');
+    this.#room.deploy.$jazz.set('timeRemainingSeconds', config.durationSeconds);
+    this.#room.deploy.$jazz.set('consecutiveFailures', 0);
+    this.#resetReady();
+  }
+
+  #startLevel(level: number): void {
+    const config = getLevelConfig(level);
+    this.#clearPrompts();
+    this.#room.deploy.$jazz.set('currentLevel', config.level);
+    this.#room.deploy.$jazz.set('levelPhase', 'playing');
+    this.#room.deploy.$jazz.set('timeRemainingSeconds', config.durationSeconds);
+    this.#room.deploy.$jazz.set('consecutiveFailures', 0);
+    this.#spawnIfNeeded();
+    this.#activateNextPrompts();
+  }
+
+  #completeCurrentLevel(): void {
+    const currentLevel = this.#room.deploy.currentLevel;
+    if (currentLevel >= LEVELS.length) {
+      this.#clearPrompts();
+      this.#room.deploy.$jazz.set('levelPhase', 'complete');
+      return;
+    }
+
+    this.#setLevelBriefing(currentLevel + 1);
+  }
+
+  /** Start the game or advance a level once everyone is ready. */
+  #checkProgressionReady(): void {
+    if (!this.#isHost) return;
     const players = this.#room.players;
-    if (players.length < 2) return;
+    if (!this.#room.gameStarted && players.length < 2) return;
     const allReady = players.every(p => p.ready);
-    if (allReady) {
+    if (!allReady) return;
+
+    if (!this.#room.gameStarted) {
       this.#distributeControls();
+      this.#setLevelBriefing(1);
       this.#room.$jazz.set('gameStarted', true);
+      return;
+    }
+
+    if (this.#room.deploy.levelPhase === 'briefing') {
+      this.#startLevel(this.#room.deploy.currentLevel);
     }
   }
 
@@ -473,12 +558,7 @@ export function createJazzRoom(options: {
 
   // Demo: seed 1 prompt for the player. Multiplayer: start empty — the host
   // will spawn prompts once the game starts and player roles are known.
-  const initialPrompts = isDemo && playerControls
-    ? pickRandomPrompts(1, playerControls).map(prompt => ({
-      ...prompt,
-      timerSeconds: scalePromptTimer(prompt.timerSeconds, 1),
-    }))
-    : [];
+  const initialPrompts: PromptDefinition[] = [];
 
   const prompts = JazzPromptList.create(
     initialPrompts.map(p => ({
@@ -505,8 +585,12 @@ export function createJazzRoom(options: {
     roomCode,
     valuation: STARTING_VALUATION,
     valuationHistory,
-    timeRemainingSeconds: 180,
+    currentLevel: 1,
+    levelPhase: 'briefing',
+    timeRemainingSeconds: LEVELS[0].durationSeconds,
     prompts,
+    consecutiveFailures: 0,
+    failureThreshold: getFailureThreshold(isDemo ? 1 : 2),
     bankrupt: false,
   }, ownerOpt);
 
