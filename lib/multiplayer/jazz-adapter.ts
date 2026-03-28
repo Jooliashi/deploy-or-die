@@ -1,5 +1,5 @@
 import { co, Group, type ID } from 'jazz-tools';
-import { demoDeployState, getLevelConfig, LEVELS, pickRandomPrompts, promptPool, roles, STARTING_VALUATION } from '@/lib/game/data';
+import { getLevelConfig, LEVELS, promptPool, STARTING_VALUATION } from '@/lib/game/data';
 import type { DeployState, LevelPhase, PromptDefinition, PromptStatus } from '@/lib/game/types';
 import {
   JazzControlList,
@@ -37,6 +37,8 @@ let promptCounter = 0;
 /** Max alerts shown to each individual player at once. Change to 2 or 3
  *  if you want players to juggle multiple tasks simultaneously. */
 export const MAX_VISIBLE_ALERTS = 1;
+export const DEMO_BUTTON_COUNT = 6;
+export const DEMO_DURATION_SECONDS = 180;
 
 /** How many queued prompts to keep in the backlog per player so there's
  *  always a next task ready the instant the current one completes. */
@@ -147,13 +149,17 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     if (exists) return;
     // Controls are assigned by the host when the game starts (or pre-set in demo).
     const ownerOpt = this.#ownerGroup ? { owner: this.#ownerGroup } : undefined;
-    const controls = JazzControlList.create([], ownerOpt);
+    const controls = JazzControlList.create(this.#playerControls ? [...this.#playerControls] : [], ownerOpt);
     this.#room.players.$jazz.push({
       playerId,
       name,
-      ready: false,
+      ready: !!this.#playerControls,
       controls,
     });
+    if (this.#playerControls && this.#isHost && this.#room.gameStarted && this.#room.deploy.levelPhase === 'playing') {
+      this.#spawnIfNeeded();
+      this.#activateNextPrompts();
+    }
   }
 
   toggleReady(playerId: string): void {
@@ -347,7 +353,9 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
 
     const isDemo = !!this.#playerControls;
     const scaledPlayerCount = Math.max(players.length, 1);
-    const activeButtonCount = getLevelConfig(this.#room.deploy.currentLevel).buttonCount;
+    const activeButtonCount = isDemo
+      ? DEMO_BUTTON_COUNT
+      : getLevelConfig(this.#room.deploy.currentLevel).buttonCount;
     this.#room.deploy.$jazz.set('failureThreshold', getFailureThreshold(scaledPlayerCount));
 
     // Collect all controls across all players (for cross-player assignment).
@@ -402,7 +410,7 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
 
     if (isDemo) {
       pool = this.#playerControls
-        ? promptPool.filter(t => this.#playerControls!.slice(0, getLevelConfig(this.#room.deploy.currentLevel).buttonCount).includes(t.actionLabel))
+        ? promptPool.filter(t => this.#playerControls!.includes(t.actionLabel))
         : promptPool;
     } else {
       const otherControls = [...allPlayerControls].filter(c => !playerCtrls.includes(c));
@@ -485,6 +493,10 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
   }
 
   #completeCurrentLevel(): void {
+    if (this.#playerControls) {
+      this.#room.deploy.$jazz.set('levelPhase', 'complete');
+      return;
+    }
     const currentLevel = this.#room.deploy.currentLevel;
     // Always advance to the next level — levels are infinite.
     this.#setLevelBriefing(currentLevel + 1);
@@ -590,8 +602,8 @@ export function createJazzRoom(options: {
     valuation: STARTING_VALUATION,
     valuationHistory,
     currentLevel: 1,
-    levelPhase: 'briefing',
-    timeRemainingSeconds: LEVELS[0].durationSeconds,
+    levelPhase: isDemo ? 'playing' : 'briefing',
+    timeRemainingSeconds: isDemo ? DEMO_DURATION_SECONDS : LEVELS[0].durationSeconds,
     prompts,
     consecutiveFailures: 0,
     failureThreshold: getFailureThreshold(isDemo ? 1 : 2),

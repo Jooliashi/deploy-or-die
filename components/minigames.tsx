@@ -10,49 +10,51 @@ interface MiniGamePanelProps {
 
 interface FlagEntry {
   country: string;
+  capital: string;
+  decoyCity: string;
+  group: string;
   flag: string;
 }
 
 const FLAG_BANK: FlagEntry[] = [
-  { country: 'Argentina', flag: '🇦🇷' },
-  { country: 'Australia', flag: '🇦🇺' },
-  { country: 'Belgium', flag: '🇧🇪' },
-  { country: 'Brazil', flag: '🇧🇷' },
-  { country: 'Canada', flag: '🇨🇦' },
-  { country: 'Chile', flag: '🇨🇱' },
-  { country: 'Colombia', flag: '🇨🇴' },
-  { country: 'Denmark', flag: '🇩🇰' },
-  { country: 'Finland', flag: '🇫🇮' },
-  { country: 'France', flag: '🇫🇷' },
-  { country: 'Germany', flag: '🇩🇪' },
-  { country: 'Greece', flag: '🇬🇷' },
-  { country: 'India', flag: '🇮🇳' },
-  { country: 'Indonesia', flag: '🇮🇩' },
-  { country: 'Ireland', flag: '🇮🇪' },
-  { country: 'Italy', flag: '🇮🇹' },
-  { country: 'Japan', flag: '🇯🇵' },
-  { country: 'Mexico', flag: '🇲🇽' },
-  { country: 'Netherlands', flag: '🇳🇱' },
-  { country: 'New Zealand', flag: '🇳🇿' },
-  { country: 'Nigeria', flag: '🇳🇬' },
-  { country: 'Norway', flag: '🇳🇴' },
-  { country: 'Peru', flag: '🇵🇪' },
-  { country: 'Poland', flag: '🇵🇱' },
-  { country: 'Portugal', flag: '🇵🇹' },
-  { country: 'Singapore', flag: '🇸🇬' },
-  { country: 'South Korea', flag: '🇰🇷' },
-  { country: 'Spain', flag: '🇪🇸' },
-  { country: 'Sweden', flag: '🇸🇪' },
-  { country: 'Switzerland', flag: '🇨🇭' },
-  { country: 'Thailand', flag: '🇹🇭' },
-  { country: 'United Kingdom', flag: '🇬🇧' },
-  { country: 'United States', flag: '🇺🇸' },
-  { country: 'Vietnam', flag: '🇻🇳' },
+  { country: 'Argentina', capital: 'Buenos Aires', decoyCity: 'Cordoba', group: 'americas-south', flag: '🇦🇷' },
+  { country: 'Australia', capital: 'Canberra', decoyCity: 'Sydney', group: 'oceania', flag: '🇦🇺' },
+  { country: 'Belgium', capital: 'Brussels', decoyCity: 'Antwerp', group: 'europe-west', flag: '🇧🇪' },
+  { country: 'Brazil', capital: 'Brasilia', decoyCity: 'Sao Paulo', group: 'americas-south', flag: '🇧🇷' },
+  { country: 'Canada', capital: 'Ottawa', decoyCity: 'Toronto', group: 'americas-north', flag: '🇨🇦' },
+  { country: 'Chile', capital: 'Santiago', decoyCity: 'Valparaiso', group: 'americas-south', flag: '🇨🇱' },
+  { country: 'Colombia', capital: 'Bogota', decoyCity: 'Medellin', group: 'americas-south', flag: '🇨🇴' },
+  { country: 'Denmark', capital: 'Copenhagen', decoyCity: 'Aarhus', group: 'europe-nordic', flag: '🇩🇰' },
+  { country: 'Finland', capital: 'Helsinki', decoyCity: 'Turku', group: 'europe-nordic', flag: '🇫🇮' },
+  { country: 'France', capital: 'Paris', decoyCity: 'Lyon', group: 'europe-west', flag: '🇫🇷' },
+  { country: 'Germany', capital: 'Berlin', decoyCity: 'Munich', group: 'europe-central', flag: '🇩🇪' },
+  { country: 'Greece', capital: 'Athens', decoyCity: 'Thessaloniki', group: 'europe-south', flag: '🇬🇷' },
+  { country: 'India', capital: 'New Delhi', decoyCity: 'Mumbai', group: 'asia-south', flag: '🇮🇳' },
+  { country: 'Indonesia', capital: 'Jakarta', decoyCity: 'Surabaya', group: 'asia-southeast', flag: '🇮🇩' },
+  { country: 'Ireland', capital: 'Dublin', decoyCity: 'Cork', group: 'europe-west', flag: '🇮🇪' },
+  { country: 'Italy', capital: 'Rome', decoyCity: 'Milan', group: 'europe-south', flag: '🇮🇹' },
+  { country: 'Japan', capital: 'Tokyo', decoyCity: 'Osaka', group: 'asia-east', flag: '🇯🇵' },
+  { country: 'Mexico', capital: 'Mexico City', decoyCity: 'Guadalajara', group: 'americas-north', flag: '🇲🇽' },
+  { country: 'Netherlands', capital: 'Amsterdam', decoyCity: 'Rotterdam', group: 'europe-west', flag: '🇳🇱' },
+  { country: 'New Zealand', capital: 'Wellington', decoyCity: 'Auckland', group: 'oceania', flag: '🇳🇿' },
+  { country: 'Nigeria', capital: 'Abuja', decoyCity: 'Lagos', group: 'africa', flag: '🇳🇬' },
+  { country: 'Norway', capital: 'Oslo', decoyCity: 'Bergen', group: 'europe-nordic', flag: '🇳🇴' },
+  { country: 'Peru', capital: 'Lima', decoyCity: 'Cusco', group: 'americas-south', flag: '🇵🇪' },
+  { country: 'Poland', capital: 'Warsaw', decoyCity: 'Krakow', group: 'europe-central', flag: '🇵🇱' },
+  { country: 'Portugal', capital: 'Lisbon', decoyCity: 'Porto', group: 'europe-south', flag: '🇵🇹' },
+  { country: 'Singapore', capital: 'Singapore', decoyCity: 'Jurong', group: 'asia-southeast', flag: '🇸🇬' },
+  { country: 'South Korea', capital: 'Seoul', decoyCity: 'Busan', group: 'asia-east', flag: '🇰🇷' },
+  { country: 'Spain', capital: 'Madrid', decoyCity: 'Barcelona', group: 'europe-south', flag: '🇪🇸' },
+  { country: 'Sweden', capital: 'Stockholm', decoyCity: 'Gothenburg', group: 'europe-nordic', flag: '🇸🇪' },
+  { country: 'Switzerland', capital: 'Bern', decoyCity: 'Zurich', group: 'europe-central', flag: '🇨🇭' },
+  { country: 'Thailand', capital: 'Bangkok', decoyCity: 'Chiang Mai', group: 'asia-southeast', flag: '🇹🇭' },
+  { country: 'United Kingdom', capital: 'London', decoyCity: 'Manchester', group: 'europe-west', flag: '🇬🇧' },
+  { country: 'United States', capital: 'Washington, D.C.', decoyCity: 'New York', group: 'americas-north', flag: '🇺🇸' },
+  { country: 'Vietnam', capital: 'Hanoi', decoyCity: 'Ho Chi Minh City', group: 'asia-southeast', flag: '🇻🇳' },
 ];
 
 interface GuessRound {
   answer: FlagEntry;
-  distractor: FlagEntry;
   options: string[];
 }
 
@@ -356,15 +358,30 @@ function buildGuessRound(exceptCountry?: string): GuessRound {
     ? FLAG_BANK.filter(entry => entry.country !== exceptCountry)
     : FLAG_BANK;
   const answer = filteredAnswers[randomIndex(filteredAnswers.length)];
-  const distractorPool = FLAG_BANK.filter(entry => entry.country !== answer.country);
-  const distractor = distractorPool[randomIndex(distractorPool.length)];
-  const options = Math.random() > 0.5
-    ? [answer.country, distractor.country]
-    : [distractor.country, answer.country];
+  const sameGroupCapitals = FLAG_BANK
+    .filter(entry => entry.country !== answer.country && entry.group === answer.group)
+    .map(entry => entry.capital);
+  const globalCapitals = FLAG_BANK
+    .filter(entry => entry.country !== answer.country && entry.capital !== answer.decoyCity)
+    .map(entry => entry.capital);
+
+  const distractors = new Set<string>([answer.decoyCity]);
+  const sameGroupPool = [...sameGroupCapitals].sort(() => Math.random() - 0.5);
+  for (const capital of sameGroupPool) {
+    if (distractors.size >= 3) break;
+    distractors.add(capital);
+  }
+
+  const fallbackPool = [...globalCapitals].sort(() => Math.random() - 0.5);
+  for (const capital of fallbackPool) {
+    if (distractors.size >= 3) break;
+    distractors.add(capital);
+  }
+
+  const options = [answer.capital, ...[...distractors].slice(0, 3)].sort(() => Math.random() - 0.5);
 
   return {
     answer,
-    distractor,
     options,
   };
 }
@@ -470,7 +487,7 @@ function GuessTheCountryGame({ onResolve }: { onResolve: () => void }) {
   return (
     <div className="mini-shell mini-shell-country">
       <div className="mini-callout mini-callout-country">
-        Which country is this flag?
+        Which capital matches this flag?
       </div>
 
       <div className="flag-card" aria-label="Flag to identify">
@@ -485,9 +502,9 @@ function GuessTheCountryGame({ onResolve }: { onResolve: () => void }) {
         {options.map(option => (
           <button
             className="country-choice"
-            key={`${round.answer.flag}-${round.distractor.country}-${option}`}
+            key={`${round.answer.flag}-${option}`}
             onClick={() => {
-              if (option === round.answer.country) {
+              if (option === round.answer.capital) {
                 onResolve();
                 return;
               }
