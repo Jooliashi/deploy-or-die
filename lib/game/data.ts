@@ -185,7 +185,7 @@ export const roles: RoleDefinition[] = [
         subControls: {
           default: [
             { label: 'A new feature has to be announced on social media', timerSeconds: 18 },
-            { label: 'A public persona is complaining about pricing', timerSeconds: 20 },
+            { label: 'A tech influencer is complaining about pricing', timerSeconds: 20 },
           ],
         },
       },

@@ -54,41 +54,10 @@ type ControlSkin =
   | 'vendor'
   | 'broadcast';
 
+/** Display label for a control button. The labels from data.ts are already
+ *  short enough to use directly. */
 function compactLabel(control: string) {
-  return control
-    .replace('Rebuild ', '')
-    .replace('Replay ', '')
-    .replace('Shift ', '')
-    .replace('Patch ', '')
-    .replace('Reconnect ', '')
-    .replace('Override ', '')
-    .replace('Sync ', '')
-    .replace('Purge ', '')
-    .replace('Restore ', '')
-    .replace('Promote ', '')
-    .replace('Backfill ', '')
-    .replace('Post ', '')
-    .replace('Reply to ', '')
-    .replace('Ping ', '')
-    .replace('Send ', '')
-    .replace('Challenge ', '')
-    .replace('Drain ', '')
-    .replace('Preview Deployment', 'PREVIEW')
-    .replace('Toolbar Comments', 'COMMENTS')
-    .replace('Flags Explorer', 'FLAGS')
-    .replace('Web Analytics', 'ANALYTICS')
-    .replace('Edge Config', 'CONFIG')
-    .replace('Cron Run', 'CRON')
-    .replace('Function Region', 'REGION')
-    .replace('Runtime Cache', 'CACHE')
-    .replace('Postgres Replica', 'POSTGRES')
-    .replace('KV Drift', 'KV')
-    .replace('Blob Asset', 'BLOB')
-    .replace('Session Store', 'SESSION')
-    .replace('Launch Thread', 'LAUNCH')
-    .replace('Enterprise Ticket', 'TICKET')
-    .replace('Integration Vendor', 'VENDOR')
-    .replace('How-To Blast', 'HOWTO');
+  return control;
 }
 
 function formatSubControlLabel(key: string) {
