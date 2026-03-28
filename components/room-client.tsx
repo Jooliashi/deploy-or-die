@@ -897,7 +897,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
           <div className="valuation-row">
             <div className="status-head">
               <div className={`signal ${trending === 'up' ? 'good' : 'danger'}`} />
-              <div className="stat-label">Valuation</div>
+              <div className="stat-label">Market Cap</div>
             </div>
             <div className={`stat-value valuation-value ${trending}`}>
               {formatValuation(valuation)}
