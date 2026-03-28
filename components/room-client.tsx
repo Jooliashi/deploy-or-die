@@ -368,12 +368,11 @@ function getPlayerControls(roleId: string): string[] {
   return [...own, ...others];
 }
 
-/** Only control labels that have prompts in the pool (for filtering spawns). */
 function getPlayerPlayableControls(roleId: string): string[] {
   const own = getPlayableControlLabels(roleId as typeof roles[number]['id']);
   const others = roles
     .filter(r => r.id !== roleId)
-    .flatMap(r => r.controls.filter(c => !!c.miniGameId).map(c => c.label))
+    .flatMap(r => r.controls.filter(control => !!control.miniGameId).map(control => control.label))
     .sort(() => Math.random() - 0.5)
     .slice(0, 2);
   return [...own, ...others];
@@ -406,17 +405,26 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const playerId = useRef(`p_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`).current;
 
   const demoRoleId = isDemo ? roles[0].id : undefined;
-  // Playable controls (only controls with prompts in pool) — used for spawn filtering.
-  const playerPlayableControls = useMemo(
+
+  // Compute the 6 display controls once (stable across renders). In demo
+  // mode this is computed eagerly so the adapter can use the same set.
+  const demoControls = useMemo(
+    () => (demoRoleId ? getPlayerControls(demoRoleId) : undefined),
+    [demoRoleId],
+  );
+
+  // Playable subset of the display controls — only those with prompts in
+  // the pool. Derived from the SAME set so buttons and prompts always match.
+  const demoPlayableControls = useMemo(
     () => (demoRoleId ? getPlayerPlayableControls(demoRoleId) : undefined),
     [demoRoleId],
   );
 
   const [adapter, setAdapter] = useState<MultiplayerAdapter | null>(() => {
     if (isDemo) {
-      const { room } = createJazzRoom({ roomCode, isDemo: true, playerControls: playerPlayableControls });
+      const { room } = createJazzRoom({ roomCode, isDemo: true, playerControls: demoPlayableControls });
       const a = new JazzMultiplayerAdapter(room, {
-        playerControls: playerPlayableControls,
+        playerControls: demoPlayableControls,
         isHost: true, // demo is always host
       });
       adapterRef.current = a;
@@ -435,14 +443,14 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const [now, setNow] = useState(Date.now());
   const subcontrolStageRef = useRef<HTMLElement>(null);
 
-  // Derive role and controls unconditionally (before any early returns) to
-  // satisfy the Rules of Hooks.
+  // Derive role and controls unconditionally (before any early returns).
   const currentRole = state?.players.find(p => p.id === playerId)?.role ?? 'frontend';
   const role = roles.find(r => r.id === currentRole) ?? roles[0];
-  // Always show 6 buttons (own role's 4 + 2 extras) regardless of playability.
+  // Always show 6 buttons. In demo, use the pre-computed set; in multiplayer,
+  // compute fresh (stable via useMemo).
   const controls = useMemo(
-    () => getPlayerControls(currentRole),
-    [currentRole],
+    () => demoControls ?? getPlayerControls(currentRole),
+    [demoControls, currentRole],
   );
   const openControlDefinition = openSubControl ? getControlDefinition(openSubControl) : undefined;
 
