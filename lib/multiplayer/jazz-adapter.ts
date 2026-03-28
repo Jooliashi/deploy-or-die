@@ -1,7 +1,8 @@
 import { co, Group, type ID } from 'jazz-tools';
 import { demoDeployState, pickRandomPrompts, promptPool, roles, STARTING_VALUATION } from '@/lib/game/data';
-import type { DeployState, PromptDefinition, PromptStatus, RoleId } from '@/lib/game/types';
+import type { DeployState, PromptDefinition, PromptStatus } from '@/lib/game/types';
 import {
+  JazzControlList,
   JazzDeployState,
   JazzPlayer,
   JazzPlayerList,
@@ -18,14 +19,17 @@ import type { MultiplayerAdapter, PlayerPresence, SharedRoomState } from '@/lib/
 /** Resolution spec for deeply loading a JazzRoom. */
 const ROOM_RESOLVE = {
   deploy: { prompts: { $each: true }, valuationHistory: true },
-  players: { $each: true },
+  players: { $each: { controls: true } },
 } as const;
 
 /** A JazzRoom with deploy.prompts, valuationHistory, and players deeply loaded. */
 type LoadedJazzRoom = co.loaded<typeof JazzRoom, typeof ROOM_RESOLVE>;
 
-/** Available roles that get assigned round-robin as players join. */
-const availableRoles: RoleId[] = roles.map(r => r.id);
+/** All control labels from the full pool. */
+const ALL_CONTROL_LABELS = [...new Set(promptPool.map(t => t.actionLabel))];
+
+/** Number of controls each player gets. */
+const CONTROLS_PER_PLAYER = 6;
 
 let promptCounter = 0;
 
@@ -41,7 +45,7 @@ function coRoomToState(room: LoadedJazzRoom): SharedRoomState {
   const prompts: PromptDefinition[] = room.deploy.prompts.map(p => ({
     id: p.promptId,
     label: p.label,
-    ownerRole: p.ownerRole as RoleId,
+    ownerRole: p.ownerRole as PromptDefinition['ownerRole'],
     actionLabel: p.actionLabel,
     selectionLabel: p.selectionLabel,
     miniGameId: p.miniGameId as PromptDefinition['miniGameId'],
@@ -63,8 +67,8 @@ function coRoomToState(room: LoadedJazzRoom): SharedRoomState {
   const players: PlayerPresence[] = room.players.map(p => ({
     id: p.playerId,
     name: p.name,
-    role: p.role as RoleId,
     ready: p.ready,
+    controls: [...p.controls],
   }));
 
   return { deploy, players, gameStarted: room.gameStarted };
@@ -114,12 +118,13 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
   addPlayer(playerId: string, name: string): void {
     const exists = this.#room.players.some(p => p.playerId === playerId);
     if (exists) return;
-    const role = availableRoles[this.#room.players.length % availableRoles.length];
+    // Controls are assigned by the host when the game starts (or pre-set in demo).
+    const controls = JazzControlList.create([]);
     this.#room.players.$jazz.push({
       playerId,
       name,
-      role,
       ready: false,
+      controls,
     });
   }
 
@@ -139,7 +144,41 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
   }
 
   startGame(): void {
+    // Distribute controls evenly among players before starting.
+    if (this.#isHost) {
+      this.#distributeControls();
+    }
     this.#room.$jazz.set('gameStarted', true);
+  }
+
+  /** Distribute controls evenly across all players. Each player gets
+   *  CONTROLS_PER_PLAYER controls. Controls are shuffled and dealt round-robin
+   *  so no two players share the same control (as much as possible). */
+  #distributeControls(): void {
+    const players = this.#room.players;
+    if (players.length === 0) return;
+
+    const shuffled = [...ALL_CONTROL_LABELS].sort(() => Math.random() - 0.5);
+    const totalNeeded = players.length * CONTROLS_PER_PLAYER;
+
+    // If we need more controls than available, cycle through the pool.
+    const pool: string[] = [];
+    while (pool.length < totalNeeded) {
+      pool.push(...shuffled);
+    }
+
+    for (let pi = 0; pi < players.length; pi++) {
+      const player = players[pi];
+      // Clear existing controls.
+      while (player.controls.length > 0) {
+        player.controls.$jazz.splice(0, 1);
+      }
+      // Deal round-robin: player 0 gets indices 0,n,2n,... player 1 gets 1,n+1,2n+1,...
+      for (let ci = 0; ci < CONTROLS_PER_PLAYER; ci++) {
+        const idx = ci * players.length + pi;
+        player.controls.$jazz.push(pool[idx % pool.length]);
+      }
+    }
   }
 
   claimPrompt(promptId: string, _playerId: string): void {
@@ -256,10 +295,18 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     if (players.length === 0) return;
 
     const isDemo = !!this.#playerControls;
-    const rolesInGame = [...new Set(players.map(p => p.role as RoleId))];
+
+    // Collect all controls across all players (for cross-player assignment).
+    const allPlayerControls = new Set<string>();
+    for (let i = 0; i < players.length; i++) {
+      for (let j = 0; j < players[i].controls.length; j++) {
+        allPlayerControls.add(players[i].controls[j]);
+      }
+    }
 
     for (let pi = 0; pi < players.length; pi++) {
       const player = players[pi];
+      const playerCtrls = [...player.controls];
 
       // Pipeline = all queued/active prompts for this player.
       const pipeline = this.#room.deploy.prompts.filter(
@@ -273,12 +320,10 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
       const usedLabels = new Set(this.#room.deploy.prompts.map(p => p.label));
 
       for (let d = 0; d < needed; d++) {
-        const template = this.#pickTemplate(isDemo, player.role as RoleId, rolesInGame, usedLabels);
+        const template = this.#pickTemplate(isDemo, playerCtrls, allPlayerControls, usedLabels);
         if (!template) continue;
         usedLabels.add(template.label);
 
-        // createdAt = 0 means "waiting in queue, not started yet".
-        // The tick will set createdAt = Date.now() when it's this prompt's turn.
         promptCounter += 1;
         this.#room.deploy.prompts.$jazz.push({
           promptId: `prompt-${Date.now()}-${promptCounter}`,
@@ -296,20 +341,32 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     }
   }
 
-  /** Pick a prompt template that has not already appeared in this room. */
-  #pickTemplate(isDemo: boolean, playerRole: RoleId, rolesInGame: RoleId[], usedLabels: Set<string>) {
+  /** Pick a prompt template. In demo: from the player's own controls. In
+   *  multiplayer: from controls the player does NOT have (so they must
+   *  communicate). Avoids recently used labels. */
+  #pickTemplate(
+    isDemo: boolean,
+    playerCtrls: string[],
+    allPlayerControls: Set<string>,
+    usedLabels: Set<string>,
+  ) {
     let pool: typeof promptPool;
 
     if (isDemo) {
+      // Demo: player sees tasks for their own controls.
       pool = this.#playerControls
         ? promptPool.filter(t => this.#playerControls!.includes(t.actionLabel))
         : promptPool;
     } else {
-      const otherRoles = rolesInGame.filter(r => r !== playerRole);
-      const targetRole = otherRoles.length > 0
-        ? otherRoles[Math.floor(Math.random() * otherRoles.length)]
-        : rolesInGame[Math.floor(Math.random() * rolesInGame.length)];
-      pool = promptPool.filter(t => t.ownerRole === targetRole);
+      // Multiplayer: pick prompts for controls this player does NOT have
+      // but that some other player does (so someone can act on it).
+      const otherControls = [...allPlayerControls].filter(c => !playerCtrls.includes(c));
+      if (otherControls.length > 0) {
+        pool = promptPool.filter(t => otherControls.includes(t.actionLabel));
+      } else {
+        // Fallback: all controls in the game.
+        pool = promptPool.filter(t => allPlayerControls.has(t.actionLabel));
+      }
     }
 
     if (pool.length === 0) return null;
@@ -360,6 +417,7 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     if (players.length < 2) return;
     const allReady = players.every(p => p.ready);
     if (allReady) {
+      this.#distributeControls();
       this.#room.$jazz.set('gameStarted', true);
     }
   }

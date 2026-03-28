@@ -29,12 +29,15 @@ export const JazzDeployState = co.map({
   bankrupt: z.boolean(),
 });
 
+export const JazzControlList = co.list(z.string());
+
 /** A single player's presence in the room. */
 export const JazzPlayer = co.map({
   playerId: z.string(),
   name: z.string(),
-  role: z.string(), // RoleId
   ready: z.boolean(),
+  /** The control labels assigned to this player. */
+  controls: JazzControlList,
 });
 
 export const JazzPlayerList = co.list(JazzPlayer);
