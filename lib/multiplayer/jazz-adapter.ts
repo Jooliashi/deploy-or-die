@@ -326,6 +326,10 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     this.#spawnIfNeeded();
   }
 
+  /** Tracks labels used in the current cycle. When all labels in the
+   *  applicable pool have been used, the set resets so prompts can repeat. */
+  #usedLabels = new Set<string>();
+
   /** Keep a deep queue per player. Prompts in the queue have createdAt = 0
    *  (not yet started). The tick activates the next one when a player has no
    *  active prompt. This means the next task appears instantly. */
@@ -359,13 +363,10 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
       const needed = QUEUE_DEPTH - pipeline.length;
       if (needed <= 0) continue;
 
-      // Once a prompt label has appeared anywhere in the room, don't ask it again.
-      const usedLabels = new Set(this.#room.deploy.prompts.map(p => p.label));
-
       for (let d = 0; d < needed; d++) {
-        const template = this.#pickTemplate(isDemo, playerCtrls, allPlayerControls, usedLabels);
+        const template = this.#pickTemplate(isDemo, playerCtrls, allPlayerControls);
         if (!template) continue;
-        usedLabels.add(template.label);
+        this.#usedLabels.add(template.label);
 
         promptCounter += 1;
         this.#room.deploy.prompts.$jazz.push({
@@ -384,38 +385,36 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     }
   }
 
-  /** Pick a prompt template. In demo: from the player's own controls. In
-   *  multiplayer: from controls the player does NOT have (so they must
-   *  communicate). Avoids recently used labels. */
+  /** Pick a prompt template. Cycles through all available prompts before
+   *  allowing repeats — resets the used set when the pool is exhausted. */
   #pickTemplate(
     isDemo: boolean,
     playerCtrls: string[],
     allPlayerControls: Set<string>,
-    usedLabels: Set<string>,
   ) {
     let pool: typeof promptPool;
 
     if (isDemo) {
-      // Demo: player sees tasks for their own controls.
       pool = this.#playerControls
         ? promptPool.filter(t => this.#playerControls!.slice(0, getLevelConfig(this.#room.deploy.currentLevel).buttonCount).includes(t.actionLabel))
         : promptPool;
     } else {
-      // Multiplayer: pick prompts for controls this player does NOT have
-      // but that some other player does (so someone can act on it).
       const otherControls = [...allPlayerControls].filter(c => !playerCtrls.includes(c));
       if (otherControls.length > 0) {
         pool = promptPool.filter(t => otherControls.includes(t.actionLabel));
       } else {
-        // Fallback: all controls in the game.
         pool = promptPool.filter(t => allPlayerControls.has(t.actionLabel));
       }
     }
 
     if (pool.length === 0) return null;
 
-    const fresh = pool.filter(t => !usedLabels.has(t.label));
-    if (fresh.length === 0) return null;
+    // Pick from unused prompts first. If all have been used, reset the cycle.
+    let fresh = pool.filter(t => !this.#usedLabels.has(t.label));
+    if (fresh.length === 0) {
+      this.#usedLabels.clear();
+      fresh = pool;
+    }
 
     return fresh[Math.floor(Math.random() * fresh.length)];
   }
