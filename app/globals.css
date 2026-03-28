@@ -1486,6 +1486,98 @@ button {
   justify-self: center;
 }
 
+/* ── Find the Logs minigame ─────────────────────────────── */
+
+.mini-shell-logs {
+  gap: 16px;
+}
+
+.mini-callout-logs {
+  color: #a8e6cf;
+}
+
+.logs-target {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.logs-target-word {
+  font-family: var(--mono);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: #a8e6cf;
+  text-shadow: 0 0 16px rgba(168, 230, 207, 0.4);
+}
+
+.logs-target-hint {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+}
+
+.logs-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color 0.2s ease;
+}
+
+.logs-grid.logs-wrong {
+  border-color: rgba(255, 77, 77, 0.6);
+  animation: logs-shake 0.4s ease;
+}
+
+@keyframes logs-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+.logs-cell {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  padding: 0;
+  width: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease, border-color 0.1s ease;
+  user-select: none;
+}
+
+.logs-cell:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.logs-cell-selected {
+  background: rgba(168, 230, 207, 0.15);
+  border-color: rgba(168, 230, 207, 0.4);
+  color: #a8e6cf;
+  text-shadow: 0 0 8px rgba(168, 230, 207, 0.4);
+}
+
+.logs-cell-selected:hover {
+  background: rgba(168, 230, 207, 0.22);
+}
+
 .mini-shell-placeholder {
   gap: 18px;
 }
