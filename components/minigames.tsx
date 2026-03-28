@@ -285,6 +285,8 @@ const CUSTOMER_NAMES = [
   'Micah Evans',
   'Priya Shah',
   'Roman Bell',
+  'Julia Shi',
+  'Andy Schneider',
 ];
 
 const CUSTOMER_AVATARS = [
