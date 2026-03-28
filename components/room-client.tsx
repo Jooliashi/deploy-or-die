@@ -632,10 +632,11 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     .slice(0, MAX_VISIBLE_ALERTS);
   const activeAlert = myAlerts[0] ?? null;
 
-  // Only the player's single visible alert should drive button/subcontrol
-  // matching, otherwise another started prompt with the same action label can
-  // incorrectly validate the wrong choice.
-  const actionablePrompt = activeAlert;
+  // Buttons should respond to ANY started prompt that matches, not just the
+  // player's own alert. In Spaceteam, Player A sees a task and tells Player B
+  // to press a button — Player B needs that button to light up even though
+  // the prompt is assigned to Player A.
+  const actionablePrompts = startedPrompts;
 
   // Count only started prompts for the display.
   const allLiveCount = startedPrompts.length;
@@ -760,7 +761,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
         <section className="station stack">
           <div className="command-board">
             {controls.map(control => {
-              const prompt = actionablePrompt?.actionLabel === control ? actionablePrompt : undefined;
+              const prompt = actionablePrompts.find(p => p.actionLabel === control);
               const controlDef = getControlDefinition(control);
               const hasPrompt = !!prompt;
               const skin = getControlSkin(control);
@@ -812,8 +813,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
                 {Object.keys(openControlDefinition.subControls).map(subControlKey => {
                   const subLabel =
                     subControlKey === 'default' ? 'Confirm' : formatSubControlLabel(subControlKey);
-                  const prompt =
-                    actionablePrompt?.actionLabel === openSubControl ? actionablePrompt : undefined;
+                  const prompt = actionablePrompts.find(p => p.actionLabel === openSubControl);
                   const isMatch =
                     subControlKey === 'default'
                       ? !prompt?.selectionLabel
