@@ -84,17 +84,20 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
   #unsubscribe: (() => void) | null = null;
   #tickInterval: ReturnType<typeof setInterval> | null = null;
   #playerControls: string[] | undefined;
-  /** Whether this client is the host (runs the tick/spawn loop).
-   *  In demo mode, always true. In multiplayer, true for the room creator. */
+  /** Whether this client is the host (runs the tick/spawn loop). */
   #isHost: boolean;
+  /** The owning Group for this room (for creating CoValues with correct access). */
+  #ownerGroup: Group | undefined;
 
   constructor(room: LoadedJazzRoom, options?: {
     playerControls?: string[];
     isHost?: boolean;
+    ownerGroup?: Group;
   }) {
     this.#room = room;
     this.#playerControls = options?.playerControls;
     this.#isHost = options?.isHost ?? true;
+    this.#ownerGroup = options?.ownerGroup;
 
     this.#unsubscribe = JazzRoom.subscribe(
       room.$jazz.id,
@@ -119,7 +122,8 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     const exists = this.#room.players.some(p => p.playerId === playerId);
     if (exists) return;
     // Controls are assigned by the host when the game starts (or pre-set in demo).
-    const controls = JazzControlList.create([]);
+    const ownerOpt = this.#ownerGroup ? { owner: this.#ownerGroup } : undefined;
+    const controls = JazzControlList.create([], ownerOpt);
     this.#room.players.$jazz.push({
       playerId,
       name,
@@ -445,7 +449,7 @@ export function createJazzRoom(options: {
   roomCode: string;
   isDemo?: boolean;
   playerControls?: string[];
-}): { room: LoadedJazzRoom; id: string } {
+}): { room: LoadedJazzRoom; id: string; ownerGroup: Group | undefined } {
   const { roomCode, isDemo, playerControls } = options;
 
   // For multiplayer rooms, create a public group so anyone can join.
@@ -504,7 +508,7 @@ export function createJazzRoom(options: {
     ownerOpt,
   ) as unknown as LoadedJazzRoom;
 
-  return { room, id: room.$jazz.id };
+  return { room, id: room.$jazz.id, ownerGroup };
 }
 
 /**

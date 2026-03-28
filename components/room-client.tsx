@@ -7,6 +7,7 @@ import { Sparkline } from '@/components/sparkline';
 import { WaitingRoom } from '@/components/waiting-room';
 import { roles } from '@/lib/game/data';
 import type { ControlDefinition, PromptDefinition } from '@/lib/game/types';
+import { Group } from 'jazz-tools';
 import {
   createJazzRoom,
   DEMO_ROOM_CODE,
@@ -389,10 +390,11 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   // Create the demo adapter once controls are chosen.
   const startDemo = useCallback((chosenControls: string[]) => {
     setDemoControls(chosenControls);
-    const { room } = createJazzRoom({ roomCode, isDemo: true, playerControls: chosenControls });
+    const { room, ownerGroup } = createJazzRoom({ roomCode, isDemo: true, playerControls: chosenControls });
     const a = new JazzMultiplayerAdapter(room, {
       playerControls: chosenControls,
       isHost: true,
+      ownerGroup,
     });
     adapterRef.current = a;
     setAdapter(a);
@@ -428,7 +430,10 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
         setLoadError('Room not found. The code may be invalid or the room may have expired.');
         return;
       }
-      const a = new JazzMultiplayerAdapter(room, { isHost });
+      // Get the room's owning group so new CoValues (like player controls)
+      // inherit the same public access.
+      const ownerGroup = room.$jazz.owner as Group | undefined;
+      const a = new JazzMultiplayerAdapter(room, { isHost, ownerGroup });
       adapterRef.current = a;
       setAdapter(a);
     })();
