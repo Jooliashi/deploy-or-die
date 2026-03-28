@@ -2802,6 +2802,121 @@ button {
 .mini-shell-traffic { gap: 14px; }
 .mini-callout-traffic { color: #fca5a5; }
 
+.mini-shell-load-balance { gap: 16px; }
+.mini-callout-load-balance { color: #86efac; }
+
+.lb-head {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.lb-burst,
+.lb-progress {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(134, 239, 172, 0.2);
+  background:
+    linear-gradient(180deg, rgba(134, 239, 172, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(7, 16, 12, 0.96);
+}
+
+.lb-burst-label,
+.lb-progress-label {
+  color: rgba(220, 255, 229, 0.7);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.lb-burst strong,
+.lb-progress strong {
+  color: #effff4;
+  font-family: var(--mono);
+  font-size: 28px;
+}
+
+.lb-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.lb-lane {
+  appearance: none;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(134, 239, 172, 0.22);
+  background:
+    linear-gradient(180deg, rgba(134, 239, 172, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(8, 14, 11, 0.96);
+  color: #ecfff2;
+  transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.lb-lane:hover {
+  transform: translateY(-2px);
+  border-color: rgba(134, 239, 172, 0.5);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+.lb-lane.danger {
+  border-color: rgba(255, 123, 123, 0.58);
+  background:
+    linear-gradient(180deg, rgba(255, 123, 123, 0.16), rgba(255, 255, 255, 0.03)),
+    rgba(21, 10, 10, 0.98);
+}
+
+.lb-lane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+}
+
+.lb-lane-name {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.lb-lane-value {
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+.lb-meter {
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.lb-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #71f2a1, #e6ff8f);
+}
+
+.lb-lane.danger .lb-meter > span {
+  background: linear-gradient(90deg, #ff8f8f, #ffd36b);
+}
+
+.lb-route-label {
+  color: rgba(236, 255, 242, 0.82);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .traffic-score {
   display: flex;
   gap: 16px;

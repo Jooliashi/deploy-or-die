@@ -115,6 +115,12 @@ interface CustomerProfile {
   avatar: string;
 }
 
+interface LoadBalancerLane {
+  id: string;
+  label: string;
+  load: number;
+}
+
 interface MazeState {
   rows: string[];
   start: { x: number; y: number };
@@ -1686,6 +1692,115 @@ function TrafficFilterGame({ onResolve }: { onResolve: () => void }) {
   );
 }
 
+function LoadBalancerSplitGame({ onResolve }: { onResolve: () => void }) {
+  const [lanes, setLanes] = useState<LoadBalancerLane[]>([
+    { id: 'a', label: 'A', load: 22 },
+    { id: 'b', label: 'B', load: 36 },
+    { id: 'c', label: 'C', load: 18 },
+  ]);
+  const [incoming, setIncoming] = useState(24);
+  const [survivedTicks, setSurvivedTicks] = useState(0);
+  const [overloadTicks, setOverloadTicks] = useState(0);
+  const TARGET_TICKS = 12;
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setLanes(current => current.map(lane => ({
+        ...lane,
+        load: Math.max(0, lane.load - (6 + Math.floor(Math.random() * 5))),
+      })));
+      setIncoming(16 + Math.floor(Math.random() * 25));
+      setSurvivedTicks(current => current + 1);
+    }, 850);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (survivedTicks >= TARGET_TICKS) {
+      onResolve();
+    }
+  }, [onResolve, survivedTicks]);
+
+  useEffect(() => {
+    const overloaded = lanes.some(lane => lane.load >= 100);
+    if (!overloaded) {
+      setOverloadTicks(0);
+      return;
+    }
+
+    setOverloadTicks(current => current + 1);
+  }, [lanes]);
+
+  useEffect(() => {
+    if (overloadTicks < 2) {
+      return;
+    }
+
+    setLanes([
+      { id: 'a', label: 'A', load: 22 },
+      { id: 'b', label: 'B', load: 36 },
+      { id: 'c', label: 'C', load: 18 },
+    ]);
+    setIncoming(18 + Math.floor(Math.random() * 18));
+    setSurvivedTicks(0);
+    setOverloadTicks(0);
+  }, [overloadTicks]);
+
+  const routeToLane = useCallback((laneId: string) => {
+    setLanes(current =>
+      current.map(lane =>
+        lane.id === laneId
+          ? { ...lane, load: Math.min(120, lane.load + incoming) }
+          : lane,
+      ),
+    );
+    setIncoming(12 + Math.floor(Math.random() * 26));
+  }, [incoming]);
+
+  return (
+    <div className="mini-shell mini-shell-load-balance">
+      <div className="mini-callout mini-callout-load-balance">
+        Route incoming traffic without overloading a server.
+      </div>
+
+      <div className="lb-head">
+        <div className="lb-burst">
+          <span className="lb-burst-label">Incoming</span>
+          <strong>{incoming}</strong>
+        </div>
+        <div className="lb-progress">
+          <span className="lb-progress-label">Stability</span>
+          <strong>{survivedTicks}/{TARGET_TICKS}</strong>
+        </div>
+      </div>
+
+      <div className="lb-grid">
+        {lanes.map(lane => {
+          const danger = lane.load >= 75;
+          return (
+            <button
+              className={`lb-lane${danger ? ' danger' : ''}`}
+              key={lane.id}
+              onClick={() => routeToLane(lane.id)}
+              type="button"
+            >
+              <div className="lb-lane-head">
+                <span className="lb-lane-name">Server {lane.label}</span>
+                <span className="lb-lane-value">{lane.load}%</span>
+              </div>
+              <div className="lb-meter">
+                <span style={{ width: `${Math.min(100, lane.load)}%` }} />
+              </div>
+              <div className="lb-route-label">Route here</div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 const IMPLEMENTED_MINIGAMES = new Set<MiniGameId>([
   'bug-bash',
   'cache-knowledge',
@@ -1693,6 +1808,7 @@ const IMPLEMENTED_MINIGAMES = new Set<MiniGameId>([
   'guess-the-country',
   'guess-the-hex',
   'it-maze',
+  'load-balancer-split',
   'math',
   'match-the-customer',
   'match-the-vendor',
@@ -1751,6 +1867,10 @@ export function MiniGamePanel({
 
   if (miniGameId === 'it-maze') {
     return <ItMazeGame onResolve={onResolve} />;
+  }
+
+  if (miniGameId === 'load-balancer-split') {
+    return <LoadBalancerSplitGame onResolve={onResolve} />;
   }
 
   if (miniGameId === 'cache-knowledge') {
