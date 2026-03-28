@@ -340,23 +340,19 @@ export const roles: RoleDefinition[] = [
         // let green (legitimate) ones through
         miniGameId: 'traffic-filter',
         subControls: {
-          blockDDoS: [
+          blockAttack: [
             { label: 'A massive DDoS attack is flooding the API with 50k requests per second', timerSeconds: 14 },
             { label: 'A botnet from a single region is hammering the login endpoint', timerSeconds: 16 },
-          ],
-          stopBots: [
             { label: 'Bots are scraping the entire product catalog at 1000 pages per minute', timerSeconds: 18 },
             { label: 'Automated signups are creating thousands of spam accounts', timerSeconds: 16 },
           ],
-          revokeAccess: [
+          lockAccess: [
             { label: 'A leaked API key with admin privileges is being used from an unknown IP', timerSeconds: 14 },
             { label: 'An ex-employee\'s access token was never revoked and is still active', timerSeconds: 16 },
           ],
-          patchVulnerability: [
+          rotateSecrets: [
             { label: 'SQL injection attempts are bypassing the current firewall rules', timerSeconds: 16 },
             { label: 'A zero-day exploit is being actively used against the auth endpoint', timerSeconds: 14 },
-          ],
-          rotateSecrets: [
             { label: 'All production secrets need to be rotated after a credential exposure', timerSeconds: 18 },
           ],
         },

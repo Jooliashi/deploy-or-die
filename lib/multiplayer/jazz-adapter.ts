@@ -359,13 +359,9 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
       const needed = QUEUE_DEPTH - pipeline.length;
       if (needed <= 0) continue;
 
-      // Once a prompt label has appeared anywhere in the room, don't ask it again.
-      const usedLabels = new Set(this.#room.deploy.prompts.map(p => p.label));
-
       for (let d = 0; d < needed; d++) {
-        const template = this.#pickTemplate(isDemo, playerCtrls, allPlayerControls, usedLabels);
+        const template = this.#pickTemplate(isDemo, playerCtrls, allPlayerControls);
         if (!template) continue;
-        usedLabels.add(template.label);
 
         promptCounter += 1;
         this.#room.deploy.prompts.$jazz.push({
@@ -391,7 +387,6 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     isDemo: boolean,
     playerCtrls: string[],
     allPlayerControls: Set<string>,
-    usedLabels: Set<string>,
   ) {
     let pool: typeof promptPool;
 
@@ -413,11 +408,7 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     }
 
     if (pool.length === 0) return null;
-
-    const fresh = pool.filter(t => !usedLabels.has(t.label));
-    if (fresh.length === 0) return null;
-
-    return fresh[Math.floor(Math.random() * fresh.length)];
+    return pool[Math.floor(Math.random() * pool.length)];
   }
 
   /** For each player, if they have no "started" prompt (createdAt > 0 and

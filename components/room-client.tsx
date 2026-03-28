@@ -516,6 +516,12 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     setActiveMiniGamePrompt(null);
     setMinigameSuccess(false);
   }, []);
+
+  useEffect(() => {
+    closeSubControls();
+    closeMiniGame();
+  }, [closeMiniGame, closeSubControls, state?.deploy.currentLevel, state?.deploy.levelPhase]);
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') {
