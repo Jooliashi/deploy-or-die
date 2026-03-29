@@ -82,6 +82,7 @@ export const roles: RoleDefinition[] = [
       },
       {
         label: 'Configs',
+        miniGameId: 'regex-rescue',
         subControls: {
           envVariable: [
             { label: 'The current Stripe token has been leaked', timerSeconds: 18 },
@@ -110,6 +111,7 @@ export const roles: RoleDefinition[] = [
       },
       {
         label: 'Workflow',
+        miniGameId: 'deploy-sequence',
         subControls: {
           default: [
             { label: 'The nightly workflow missed a revalidation run', timerSeconds: 20 },

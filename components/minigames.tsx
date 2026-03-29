@@ -123,11 +123,115 @@ interface LoadBalancerLane {
   load: number;
 }
 
+interface RegexScenario {
+  prompt: string;
+  samples: string[];
+  answer: string;
+  distractors: string[];
+}
+
 interface MazeState {
   rows: string[];
   start: { x: number; y: number };
   goal: { x: number; y: number };
 }
+
+interface DeploySequenceScenario {
+  sentence: string;
+  sequence: string[];
+  options: string[];
+}
+
+const MAZE_BANK = [
+  [
+    '#########',
+    '#S  #   #',
+    '# # # # #',
+    '# #   # #',
+    '# ### # #',
+    '#   #   #',
+    '### ### #',
+    '#      G#',
+    '#########',
+  ],
+  [
+    '#########',
+    '#S     ##',
+    '### ##  #',
+    '#   ## ##',
+    '# #    ##',
+    '# ####  #',
+    '#    ## #',
+    '## #   G#',
+    '#########',
+  ],
+  [
+    '#########',
+    '#S#     #',
+    '# # ### #',
+    '# # #   #',
+    '#   # ###',
+    '### #   #',
+    '#   ### #',
+    '#     #G#',
+    '#########',
+  ],
+  [
+    '#########',
+    '#S   ## #',
+    '# ## ## #',
+    '# ##    #',
+    '# #######',
+    '#   #   #',
+    '### # # #',
+    '#     #G#',
+    '#########',
+  ],
+  [
+    '#########',
+    '#S      #',
+    '# ##### #',
+    '#   #   #',
+    '### # ###',
+    '#   #   #',
+    '# ### # #',
+    '#     #G#',
+    '#########',
+  ],
+  [
+    '#########',
+    '#S##    #',
+    '#  # ## #',
+    '## # ## #',
+    '#  #    #',
+    '# #######',
+    '#     # #',
+    '# ###  G#',
+    '#########',
+  ],
+  [
+    '#########',
+    '#S  #   #',
+    '## ## # #',
+    '#   # # #',
+    '# ### # #',
+    '#     # #',
+    '# ##### #',
+    '#     #G#',
+    '#########',
+  ],
+  [
+    '#########',
+    '#S   #  #',
+    '# ## # ##',
+    '# ## #  #',
+    '#    ## #',
+    '#### ## #',
+    '#      ##',
+    '# #### G#',
+    '#########',
+  ],
+];
 
 const CODE_SNIPPETS = [
   "const deploy = await ship({ target: 'production' });",
@@ -341,6 +445,155 @@ const VALID_VERCEL_REGION_CODES = [
 
 const VALID_VERCEL_REGION_SET = new Set(VALID_VERCEL_REGION_CODES);
 
+const DEPLOY_SEQUENCE_SCENARIOS: DeploySequenceScenario[] = [
+  { sentence: 'A monkey takes the banana to the park.', sequence: ['🐵', '🍌', '🏞️'], options: ['🐵', '🍌', '🏞️', '🚶', '🚀'] },
+  { sentence: 'The robot ships the package to the moon.', sequence: ['🤖', '📦', '🌕'], options: ['🤖', '📦', '🌕', '🚚', '☁️'] },
+  { sentence: 'A cat brings coffee to the office.', sequence: ['🐱', '☕', '🏢'], options: ['🐱', '☕', '🏢', '🧑‍💻', '📨'] },
+  { sentence: 'The wizard sends the scroll to the castle.', sequence: ['🧙', '📜', '🏰'], options: ['🧙', '📜', '🏰', '🐉', '⚔️'] },
+  { sentence: 'A fox carries pizza to the beach.', sequence: ['🦊', '🍕', '🏖️'], options: ['🦊', '🍕', '🏖️', '🚲', '🌊'] },
+  { sentence: 'The astronaut moves the laptop to Mars.', sequence: ['🧑‍🚀', '💻', '🪐'], options: ['🧑‍🚀', '💻', '🪐', '🚀', '🌌'] },
+  { sentence: 'A panda delivers noodles to the city.', sequence: ['🐼', '🍜', '🏙️'], options: ['🐼', '🍜', '🏙️', '🚕', '🎐'] },
+  { sentence: 'The penguin slides the fish to the iceberg.', sequence: ['🐧', '🐟', '🧊'], options: ['🐧', '🐟', '🧊', '🌊', '⛷️'] },
+  { sentence: 'A scientist brings the potion to the lab.', sequence: ['🧑‍🔬', '🧪', '🧫'], options: ['🧑‍🔬', '🧪', '🧫', '🧬', '🔬'] },
+  { sentence: 'The knight carries the key to the tower.', sequence: ['🛡️', '🗝️', '🗼'], options: ['🛡️', '🗝️', '🗼', '🐴', '⚔️'] },
+  { sentence: 'A bird drops the letter at the house.', sequence: ['🐦', '✉️', '🏠'], options: ['🐦', '✉️', '🏠', '📮', '🌳'] },
+  { sentence: 'The developer sends the bug to the trash.', sequence: ['🧑‍💻', '🐛', '🗑️'], options: ['🧑‍💻', '🐛', '🗑️', '⌨️', '📦'] },
+  { sentence: 'A farmer brings the apple to the barn.', sequence: ['🧑‍🌾', '🍎', '🛖'], options: ['🧑‍🌾', '🍎', '🛖', '🚜', '🌾'] },
+  { sentence: 'The ghost takes the candle to the cave.', sequence: ['👻', '🕯️', '🕳️'], options: ['👻', '🕯️', '🕳️', '🌙', '🪨'] },
+  { sentence: 'A diver moves the pearl to the ship.', sequence: ['🤿', '🦪', '🛳️'], options: ['🤿', '🦪', '🛳️', '🌊', '⚓'] },
+  { sentence: 'The chef brings sushi to the market.', sequence: ['🧑‍🍳', '🍣', '🏪'], options: ['🧑‍🍳', '🍣', '🏪', '🔪', '🛒'] },
+  { sentence: 'A bee carries honey to the garden.', sequence: ['🐝', '🍯', '🌷'], options: ['🐝', '🍯', '🌷', '🌼', '☀️'] },
+  { sentence: 'The racer drives the trophy to the garage.', sequence: ['🏎️', '🏆', '🏁'], options: ['🏎️', '🏆', '🏁', '⛽', '🔧'] },
+  { sentence: 'A pirate takes the map to the island.', sequence: ['🏴‍☠️', '🗺️', '🏝️'], options: ['🏴‍☠️', '🗺️', '🏝️', '⚓', '💰'] },
+  { sentence: 'The artist brings the brush to the museum.', sequence: ['🧑‍🎨', '🖌️', '🖼️'], options: ['🧑‍🎨', '🖌️', '🖼️', '🎨', '🏛️'] },
+  { sentence: 'A doctor sends the pill to the hospital.', sequence: ['🧑‍⚕️', '💊', '🏥'], options: ['🧑‍⚕️', '💊', '🏥', '🩺', '🚑'] },
+  { sentence: 'The mail truck takes the parcel to the mountain.', sequence: ['🚚', '📦', '⛰️'], options: ['🚚', '📦', '⛰️', '🛣️', '📬'] },
+  { sentence: 'A unicorn brings the star to the cloud.', sequence: ['🦄', '⭐', '☁️'], options: ['🦄', '⭐', '☁️', '🌈', '✨'] },
+];
+
+const REGEX_SCENARIOS: RegexScenario[] = [
+  {
+    prompt: 'Match Vercel-style region codes',
+    samples: ['iad1', 'pdx1', 'fra1'],
+    answer: '^[a-z]{3}\\d$',
+    distractors: ['^[a-z]{2}\\d{2}$', '^[a-z]{4}\\d$'],
+  },
+  {
+    prompt: 'Match preview deployment URLs',
+    samples: ['app-git-main-acme.vercel.app', 'docs-git-fix-acme.vercel.app', 'api-git-test-acme.vercel.app'],
+    answer: '^[a-z0-9-]+\\.vercel\\.app$',
+    distractors: ['^[a-z0-9-]+\\.vercel\\.com$', '^[a-z0-9]+\\.vercel\\.app$'],
+  },
+  {
+    prompt: 'Match ENV var keys written in screaming snake case',
+    samples: ['STRIPE_SECRET_KEY', 'NEXT_PUBLIC_API_URL', 'EDGE_CONFIG_TOKEN'],
+    answer: '^[A-Z0-9_]+$',
+    distractors: ['^[a-z0-9_]+$', '^[A-Z][a-z0-9_]+$'],
+  },
+  {
+    prompt: 'Match version tags like v12',
+    samples: ['v1', 'v12', 'v203'],
+    answer: '^v\\d+$',
+    distractors: ['^v[A-Z]+$', '^v\\d{2}$'],
+  },
+  {
+    prompt: 'Match branch names with slashes',
+    samples: ['feat/flags', 'fix/login-loop', 'chore/release'],
+    answer: '^[a-z]+\\/[a-z0-9-]+$',
+    distractors: ['^[A-Z]+\\/[a-z0-9-]+$', '^[a-z]+-[a-z0-9-]+$'],
+  },
+  {
+    prompt: 'Match UUID-like short ids with lowercase hex',
+    samples: ['a3f9c1', 'ff09ab', '0bc123'],
+    answer: '^[a-f0-9]{6}$',
+    distractors: ['^[A-F0-9]{6}$', '^[a-z0-9]{8}$'],
+  },
+  {
+    prompt: 'Match HTTP status codes',
+    samples: ['200', '404', '503'],
+    answer: '^\\d{3}$',
+    distractors: ['^\\d{2}$', '^\\d{3}[A-Z]$'],
+  },
+  {
+    prompt: 'Match dates formatted like 2026-03-28',
+    samples: ['2026-03-28', '2025-11-09', '2027-01-01'],
+    answer: '^\\d{4}-\\d{2}-\\d{2}$',
+    distractors: ['^\\d{2}-\\d{2}-\\d{4}$', '^\\d{4}\\/\\d{2}\\/\\d{2}$'],
+  },
+  {
+    prompt: 'Match semantic versions',
+    samples: ['1.0.0', '12.4.9', '0.18.2'],
+    answer: '^\\d+\\.\\d+\\.\\d+$',
+    distractors: ['^v\\d+\\.\\d+\\.\\d+$', '^\\d+\\.\\d+$'],
+  },
+  {
+    prompt: 'Match email-like team addresses',
+    samples: ['ops@acme.com', 'dev@ship.io', 'team@vercel.app'],
+    answer: '^[a-z]+@[a-z0-9.-]+\\.[a-z]{2,}$',
+    distractors: ['^[A-Z]+@[a-z0-9.-]+\\.[a-z]{2,}$', '^[a-z]+#[a-z0-9.-]+\\.[a-z]{2,}$'],
+  },
+  {
+    prompt: 'Match paths that start with /api/',
+    samples: ['/api/logs', '/api/deploy', '/api/health'],
+    answer: '^\\/api\\/[a-z-]+$',
+    distractors: ['^api\\/[a-z-]+$', '^\\/[a-z-]+\\/api$'],
+  },
+  {
+    prompt: 'Match ticket ids like INC-203',
+    samples: ['INC-203', 'INC-404', 'INC-999'],
+    answer: '^INC-\\d{3}$',
+    distractors: ['^inc-\\d{3}$', '^INC_\\d{3}$'],
+  },
+  {
+    prompt: 'Match lowercase kebab-case slugs',
+    samples: ['launch-thread', 'support-guide', 'preview-cache'],
+    answer: '^[a-z]+(?:-[a-z]+)+$',
+    distractors: ['^[a-z]+(?:_[a-z]+)+$', '^[A-Z]+(?:-[a-z]+)+$'],
+  },
+  {
+    prompt: 'Match CSS hex colors',
+    samples: ['#ff6600', '#00ccaa', '#1f2d3d'],
+    answer: '^#[a-f0-9]{6}$',
+    distractors: ['^#[A-F0-9]{3}$', '^[a-f0-9]{6}$'],
+  },
+  {
+    prompt: 'Match log levels in brackets',
+    samples: ['[INFO]', '[WARN]', '[ERROR]'],
+    answer: '^\\[[A-Z]+\\]$',
+    distractors: ['^\\([A-Z]+\\)$', '^\\[[a-z]+\\]$'],
+  },
+  {
+    prompt: 'Match numbers ending in ms',
+    samples: ['120ms', '5ms', '980ms'],
+    answer: '^\\d+ms$',
+    distractors: ['^\\d+s$', '^ms\\d+$'],
+  },
+  {
+    prompt: 'Match hostnames with dot separators',
+    samples: ['edge.us1.vercel', 'api.eu2.vercel', 'cache.ap1.vercel'],
+    answer: '^[a-z]+\\.[a-z0-9]+\\.vercel$',
+    distractors: ['^[a-z]+-[a-z0-9]+-vercel$', '^[A-Z]+\\.[a-z0-9]+\\.vercel$'],
+  },
+  {
+    prompt: 'Match numbers with optional leading minus',
+    samples: ['10', '-4', '203'],
+    answer: '^-?\\d+$',
+    distractors: ['^\\+?\\d+$', '^\\d+-?$'],
+  },
+  {
+    prompt: 'Match file names ending in .ts',
+    samples: ['route.ts', 'config.ts', 'cache.ts'],
+    answer: '^[a-z-]+\\.ts$',
+    distractors: ['^[a-z-]+\\.js$', '^[A-Z-]+\\.ts$'],
+  },
+  {
+    prompt: 'Match commit hashes shortened to 7 chars',
+    samples: ['a1b2c3d', 'ff09abc', '9d8e7f6'],
+    answer: '^[a-f0-9]{7}$',
+    distractors: ['^[a-z0-9]{7}$', '^[a-f0-9]{6}$'],
+  },
+];
+
 function randomIndex(length: number, except?: number): number {
   if (length <= 1) {
     return 0;
@@ -461,23 +714,40 @@ function buildCustomerProfiles(): CustomerProfile[] {
 }
 
 function buildMaze(): MazeState {
-  const rows = [
-    '#########',
-    '#S  #   #',
-    '# # # # #',
-    '# #   # #',
-    '# ### # #',
-    '#   #   #',
-    '### ### #',
-    '#      G#',
-    '#########',
-  ];
+  const rows = MAZE_BANK[Math.floor(Math.random() * MAZE_BANK.length)];
 
   return {
     rows,
-    start: { x: 1, y: 1 },
-    goal: { x: 7, y: 7 },
+    start: findMazeMarker(rows, 'S'),
+    goal: findMazeMarker(rows, 'G'),
   };
+}
+
+function findMazeMarker(rows: string[], marker: 'S' | 'G') {
+  for (let y = 0; y < rows.length; y += 1) {
+    const x = rows[y].indexOf(marker);
+    if (x !== -1) {
+      return { x, y };
+    }
+  }
+
+  return marker === 'S' ? { x: 1, y: 1 } : { x: rows[0].length - 2, y: rows.length - 2 };
+}
+
+function buildDeploySequenceScenario(previousSentence?: string): DeploySequenceScenario {
+  const pool = previousSentence
+    ? DEPLOY_SEQUENCE_SCENARIOS.filter(scenario => scenario.sentence !== previousSentence)
+    : DEPLOY_SEQUENCE_SCENARIOS;
+  return pool[randomIndex(pool.length)];
+}
+
+function buildRegexScenario(previousPrompt?: string) {
+  const pool = previousPrompt
+    ? REGEX_SCENARIOS.filter(scenario => scenario.prompt !== previousPrompt)
+    : REGEX_SCENARIOS;
+  const scenario = pool[randomIndex(pool.length)];
+  const options = [scenario.answer, ...scenario.distractors].sort(() => Math.random() - 0.5);
+  return { ...scenario, options };
 }
 
 function GuessTheCountryGame({ onResolve }: { onResolve: () => void }) {
@@ -1596,6 +1866,161 @@ function TrafficFilterGame({ onResolve }: { onResolve: () => void }) {
   );
 }
 
+function DeploySequenceGame({ onResolve }: { onResolve: () => void }) {
+  const [scenario, setScenario] = useState<DeploySequenceScenario>(() => buildDeploySequenceScenario());
+  const [progress, setProgress] = useState<string[]>([]);
+  const [wrongPulse, setWrongPulse] = useState(false);
+  const [completed, setCompleted] = useState(false);
+
+  useEffect(() => {
+    if (!completed) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      onResolve();
+    }, 420);
+
+    return () => window.clearTimeout(timeout);
+  }, [completed, onResolve]);
+
+  const resetProgress = useCallback(() => {
+    if (completed) {
+      return;
+    }
+    setWrongPulse(true);
+    window.setTimeout(() => setWrongPulse(false), 180);
+    setProgress([]);
+  }, [completed]);
+
+  const onPick = useCallback((emoji: string) => {
+    if (completed) {
+      return;
+    }
+
+    const expected = scenario.sequence[progress.length];
+    if (emoji !== expected) {
+      resetProgress();
+      return;
+    }
+
+    const nextProgress = [...progress, emoji];
+    setProgress(nextProgress);
+    if (nextProgress.length === scenario.sequence.length) {
+      setCompleted(true);
+      return;
+    }
+  }, [completed, progress, resetProgress, scenario.sequence]);
+
+  const replayScenario = useCallback(() => {
+    setScenario(buildDeploySequenceScenario(scenario.sentence));
+    setProgress([]);
+    setWrongPulse(false);
+    setCompleted(false);
+  }, [scenario.sentence]);
+
+  return (
+    <div className="mini-shell mini-shell-deploy-sequence">
+      <div className="mini-callout mini-callout-deploy-sequence">
+        Click the emoji in the correct order.
+      </div>
+
+      <div className={`deploy-sequence-card${wrongPulse ? ' wrong' : ''}${completed ? ' complete' : ''}`}>
+        <p className="deploy-sequence-sentence">{scenario.sentence}</p>
+
+        <div className="deploy-sequence-progress" aria-label="Selected sequence">
+          {scenario.sequence.map((emoji, index) => {
+            const status = progress[index]
+              ? 'done'
+              : index === progress.length
+                ? 'next'
+                : '';
+
+            return (
+              <span
+                className={`deploy-sequence-slot${status ? ` ${status}` : ''}`}
+                key={`${scenario.sentence}-${emoji}-${index}`}
+              >
+                {progress[index] ?? '•'}
+              </span>
+            );
+          })}
+        </div>
+
+        <div className="deploy-sequence-grid">
+          {scenario.options.map(emoji => (
+            <button
+              className="deploy-sequence-choice"
+              key={`${scenario.sentence}-${emoji}`}
+              onClick={() => onPick(emoji)}
+              disabled={completed}
+              type="button"
+            >
+              <span aria-hidden="true">{emoji}</span>
+            </button>
+          ))}
+        </div>
+
+        <button className="deploy-sequence-refresh" disabled={completed} onClick={replayScenario} type="button">
+          New sentence
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function RegexRescueGame({ onResolve }: { onResolve: () => void }) {
+  const [scenario, setScenario] = useState(() => buildRegexScenario());
+  const [wrongPulse, setWrongPulse] = useState(false);
+
+  const pickOption = useCallback((option: string) => {
+    if (option === scenario.answer) {
+      onResolve();
+      return;
+    }
+
+    setWrongPulse(true);
+    window.setTimeout(() => setWrongPulse(false), 180);
+    setScenario(buildRegexScenario(scenario.prompt));
+  }, [onResolve, scenario.answer, scenario.prompt]);
+
+  return (
+    <div className="mini-shell mini-shell-regex">
+      <div className="mini-callout mini-callout-regex">
+        Pick the regex that matches all sample strings.
+      </div>
+
+      <div className={`regex-card${wrongPulse ? ' wrong' : ''}`}>
+        <div className="regex-head">
+          <span className="regex-kicker">Pattern target</span>
+          <strong className="regex-title">{scenario.prompt}</strong>
+        </div>
+
+        <div className="regex-samples">
+          {scenario.samples.map(sample => (
+            <code className="regex-sample" key={`${scenario.prompt}-${sample}`}>
+              {sample}
+            </code>
+          ))}
+        </div>
+
+        <div className="regex-grid">
+          {scenario.options.map(option => (
+            <button
+              className="regex-choice"
+              key={`${scenario.prompt}-${option}`}
+              onClick={() => pickOption(option)}
+              type="button"
+            >
+              <code>{option}</code>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LoadBalancerSplitGame({ onResolve }: { onResolve: () => void }) {
   const [lanes, setLanes] = useState<LoadBalancerLane[]>([
     { id: 'a', label: 'A', load: 22 },
@@ -1716,8 +2141,10 @@ const IMPLEMENTED_MINIGAMES = new Set<MiniGameId>([
   'match-the-customer',
   'match-the-vendor',
   'monkey-type',
+  'deploy-sequence',
   'name-five-aws-region',
   'pod-doctor',
+  'regex-rescue',
   'refund-rush',
   'traffic-filter',
 ]);
@@ -1746,8 +2173,16 @@ export function MiniGamePanel({
     return <GuessTheHexGame onResolve={onResolve} />;
   }
 
+  if (miniGameId === 'deploy-sequence') {
+    return <DeploySequenceGame onResolve={onResolve} />;
+  }
+
   if (miniGameId === 'name-five-aws-region') {
     return <NameFiveVercelRegionGame onResolve={onResolve} />;
+  }
+
+  if (miniGameId === 'regex-rescue') {
+    return <RegexRescueGame onResolve={onResolve} />;
   }
 
   if (miniGameId === 'math') {
