@@ -233,27 +233,29 @@ const MAZE_BANK = [
   ],
 ];
 
-const CODE_SNIPPETS = [
-  "const deploy = await ship({ target: 'production' });",
-  "export const runtime = 'edge';",
-  "if (!flags.newDashboard) return redirect('/home');",
-  "const latencyMs = Math.round(performance.now() - startTime);",
-  "await revalidateTag('pricing-page');",
-  "const config = await edgeConfig.get('checkout_theme');",
-  "return Response.json({ ok: true, region: 'iad1' });",
-  "const retries = Math.min(attempt + 1, 3);",
-  "const healthy = status === 'ready' && errors.length === 0;",
-  "await logDrain.flush({ force: true });",
-  "const nextRegion = regions.find(region => region !== currentRegion);",
-  "headers.set('x-vercel-cache', 'MISS');",
-  "const body = JSON.stringify({ feature: 'toolbar-comments' });",
-  "return flags.rolloutPercent >= 50 ? 'open' : 'closed';",
-  "const response = await fetch('/api/ship', { method: 'POST' });",
-  "const ratio = Number((requests / errors).toFixed(2));",
-  "if (uptime < 99.9) triggerIncident('customer-impacting');",
-  "await invalidateByPrefix('preview:landing-page');",
-  "const edgeRegion = process.env.VERCEL_REGION ?? 'iad1';",
-  "const owner = team.slug.replace(/-/g, '_');",
+const TWEET_SNIPPETS = [
+  'just deployed on a friday, what could go wrong',
+  'our status page says all green but my inbox says otherwise',
+  'who approved this pull request at 2am',
+  'the intern pushed to main and now we are trending',
+  'nothing like a good rollback to start the morning',
+  'we scaled to zero and our customers noticed',
+  'the database is fine, it is just thinking really hard',
+  'shipped the fix, broke two other things, classic',
+  'our uptime is great if you ignore last tuesday',
+  'someone rotated the keys and forgot to tell anyone',
+  'the cache is stale but the vibes are fresh',
+  'customers are reporting issues, we are investigating',
+  'hot take: staging is just production with fewer users',
+  'we do not have a deployment problem, we have a courage problem',
+  'the deploy is stuck, has anyone tried turning it off and on again',
+  'turns out the feature flag was on for everyone the whole time',
+  'the on call engineer is sleeping, pray for our customers',
+  'new feature just dropped, and so did our conversion rate',
+  'we promise the next release will fix everything',
+  'our monitoring caught the issue three hours after twitter did',
+  'the build passed locally, blame the ci runner',
+  'just merged a one line fix with a two page post mortem',
 ];
 
 const VENDOR_COMPANIES: VendorCompany[] = [
@@ -1027,7 +1029,7 @@ function MathGame({ onResolve }: { onResolve: () => void }) {
 }
 
 function MonkeyTypeGame({ onResolve }: { onResolve: () => void }) {
-  const [snippet] = useState(() => CODE_SNIPPETS[randomIndex(CODE_SNIPPETS.length)]);
+  const [snippet] = useState(() => TWEET_SNIPPETS[randomIndex(TWEET_SNIPPETS.length)]);
   const [typed, setTyped] = useState('');
   const [focused, setFocused] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -1045,7 +1047,7 @@ function MonkeyTypeGame({ onResolve }: { onResolve: () => void }) {
   return (
     <div className="mini-shell mini-shell-monkeytype">
       <div className="mini-callout mini-callout-monkeytype">
-        Type through the snippet character by character.
+        Type the tweet as fast as you can.
       </div>
 
       <div
