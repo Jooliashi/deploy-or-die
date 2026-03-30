@@ -1670,7 +1670,11 @@ interface TrafficRequest {
   id: string;
   label: string;
   malicious: boolean;
+  spawnedAt: number;
 }
+
+/** Delay in ms before the color hint appears on a request. */
+const TRAFFIC_REVEAL_DELAY = 1500;
 
 const TRAFFIC_POOL = {
   bad: [
@@ -1692,15 +1696,15 @@ function spawnRequest(): TrafficRequest {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     label: pool[Math.floor(Math.random() * pool.length)],
     malicious,
+    spawnedAt: Date.now(),
   };
 }
 
 function TrafficFilterGame({ onResolve }: { onResolve: () => void }) {
-  const [requests, setRequests] = useState<TrafficRequest[]>(() =>
-    Array.from({ length: 5 }, spawnRequest),
-  );
+  const [requests, setRequests] = useState<TrafficRequest[]>(() => [spawnRequest()]);
   const [score, setScore] = useState(0);
   const [mistakes, setMistakes] = useState(0);
+  const [now, setNow] = useState(Date.now());
   const TARGET = 7;
 
   useEffect(() => {
@@ -1709,7 +1713,14 @@ function TrafficFilterGame({ onResolve }: { onResolve: () => void }) {
         const next = [...prev.slice(-6), spawnRequest()];
         return next;
       });
+      setNow(Date.now());
     }, 750);
+    return () => clearInterval(t);
+  }, []);
+
+  // Also tick `now` more frequently so the reveal transition is smooth.
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 200);
     return () => clearInterval(t);
   }, []);
 
@@ -1736,19 +1747,19 @@ function TrafficFilterGame({ onResolve }: { onResolve: () => void }) {
         {mistakes > 0 && <span className="traffic-bad">{mistakes} false positive{mistakes > 1 ? 's' : ''}</span>}
       </div>
       <div className="traffic-feed">
-        {requests.map(req => (
-          <button
-            key={req.id}
-            className={`traffic-req${req.malicious ? ' traffic-mal' : ' traffic-legit'}`}
-            onClick={() => tap(req)}
-            type="button"
-          >
-            <span className="traffic-marker" aria-hidden="true">
-              {req.malicious ? 'BLOCK' : 'PASS'}
-            </span>
-            <code>{req.label}</code>
-          </button>
-        ))}
+        {requests.map(req => {
+          const revealed = now - req.spawnedAt >= TRAFFIC_REVEAL_DELAY;
+          return (
+            <button
+              key={req.id}
+              className={`traffic-req${revealed ? (req.malicious ? ' traffic-mal' : ' traffic-legit') : ' traffic-neutral'}`}
+              onClick={() => tap(req)}
+              type="button"
+            >
+              <code>{req.label}</code>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
