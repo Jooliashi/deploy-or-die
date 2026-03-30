@@ -13,8 +13,21 @@ const DEFAULT_NAMES = [
   'Quiet', 'Venom', 'Pequod', 'Morpho',
 ];
 
+const STORAGE_KEY = 'deploy-or-die:playerName';
+
+function getSavedName(): string | null {
+  if (typeof window === 'undefined') return null;
+  try { return localStorage.getItem(STORAGE_KEY); }
+  catch { return null; }
+}
+
+function saveName(name: string): void {
+  try { localStorage.setItem(STORAGE_KEY, name); }
+  catch { /* ignore */ }
+}
+
 function pickDefaultName(): string {
-  return DEFAULT_NAMES[Math.floor(Math.random() * DEFAULT_NAMES.length)];
+  return getSavedName() || DEFAULT_NAMES[Math.floor(Math.random() * DEFAULT_NAMES.length)];
 }
 
 /** Extract a Jazz room ID from user input. Handles:
@@ -49,6 +62,11 @@ export function Lobby() {
   const [joinCode, setJoinCode] = useState('');
   const [createdRoomId, setCreatedRoomId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+
+  // Persist name to localStorage whenever it changes.
+  useEffect(() => {
+    if (name.trim()) saveName(name.trim());
+  }, [name]);
 
   // Pre-fill join code from ?join= URL param.
   useEffect(() => {

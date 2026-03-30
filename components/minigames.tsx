@@ -1663,6 +1663,181 @@ function shuffle<T>(arr: T[]): T[] {
 
 
 // ---------------------------------------------------------------------------
+// Shape Sorter — drag shapes into matching holes
+// ---------------------------------------------------------------------------
+
+interface ShapeDef {
+  id: string;
+  /** SVG path for the shape (centered in a 0 0 48 48 viewBox). */
+  path: string;
+  color: string;
+}
+
+const SHAPE_DEFS: ShapeDef[] = [
+  { id: 'circle', path: 'M24 4a20 20 0 1 1 0 40 20 20 0 1 1 0-40z', color: '#3EA8FF' },
+  { id: 'triangle', path: 'M24 4L44 40H4z', color: '#FF5E57' },
+  { id: 'square', path: 'M6 6h36v36H6z', color: '#F6C549' },
+  { id: 'star', path: 'M24 2l6.5 14.5H46l-12 9.5 4.5 15L24 32l-14.5 9 4.5-15-12-9.5h15.5z', color: '#86efac' },
+  { id: 'diamond', path: 'M24 2L44 24 24 46 4 24z', color: '#c084fc' },
+  { id: 'hexagon', path: 'M24 2l19 11v22l-19 11L5 35V13z', color: '#fb923c' },
+];
+
+const SHAPE_COUNT = 4;
+const SNAP_THRESHOLD = 0.15; // 15% of board width
+
+function buildShapeRound(): ShapeDef[] {
+  return [...SHAPE_DEFS].sort(() => Math.random() - 0.5).slice(0, SHAPE_COUNT);
+}
+
+function ShapeSorterGame({ onResolve }: { onResolve: () => void }) {
+  // `holeShapes` defines the order of holes at the top (randomly picked).
+  // `pieces` is a separately shuffled copy — piece order differs from hole order.
+  const [holeShapes] = useState(buildShapeRound);
+  const [pieces] = useState(() => [...holeShapes].sort(() => Math.random() - 0.5));
+
+  const holePositions = useMemo(() =>
+    holeShapes.map((_, i) => ({ x: (i + 0.5) / SHAPE_COUNT, y: 0.22 })),
+    [holeShapes],
+  );
+  const initialPositions = useMemo(() =>
+    pieces.map((_, i) => ({ x: (i + 0.5) / SHAPE_COUNT, y: 0.78 })),
+    [pieces],
+  );
+
+  const [positions, setPositions] = useState(initialPositions);
+  const [locked, setLocked] = useState<boolean[]>(() => pieces.map(() => false));
+  const [dragging, setDragging] = useState<number | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const boardRef = useRef<HTMLDivElement>(null);
+
+  const completed = locked.every(Boolean);
+  useEffect(() => {
+    if (completed) {
+      const t = setTimeout(onResolve, 400);
+      return () => clearTimeout(t);
+    }
+  }, [completed, onResolve]);
+
+  const getBoardCoords = useCallback((clientX: number, clientY: number) => {
+    const rect = boardRef.current?.getBoundingClientRect();
+    if (!rect) return { x: 0, y: 0 };
+    return {
+      x: (clientX - rect.left) / rect.width,
+      y: (clientY - rect.top) / rect.height,
+    };
+  }, []);
+
+  const startDrag = useCallback((idx: number, clientX: number, clientY: number) => {
+    if (locked[idx]) return;
+    const coords = getBoardCoords(clientX, clientY);
+    setDragging(idx);
+    setDragOffset({
+      x: positions[idx].x - coords.x,
+      y: positions[idx].y - coords.y,
+    });
+  }, [locked, positions, getBoardCoords]);
+
+  const moveDrag = useCallback((clientX: number, clientY: number) => {
+    if (dragging === null) return;
+    const coords = getBoardCoords(clientX, clientY);
+    setPositions(prev => {
+      const next = [...prev];
+      next[dragging] = { x: coords.x + dragOffset.x, y: coords.y + dragOffset.y };
+      return next;
+    });
+  }, [dragging, dragOffset, getBoardCoords]);
+
+  const endDrag = useCallback(() => {
+    if (dragging === null) return;
+    const pos = positions[dragging];
+    const piece = pieces[dragging];
+
+    // Find the matching hole for this piece's shape.
+    const holeIdx = holeShapes.findIndex(h => h.id === piece.id);
+    if (holeIdx === -1) { setDragging(null); return; }
+
+    const holePos = holePositions[holeIdx];
+    const dist = Math.sqrt((pos.x - holePos.x) ** 2 + (pos.y - holePos.y) ** 2);
+
+    if (dist < SNAP_THRESHOLD) {
+      setPositions(prev => {
+        const next = [...prev];
+        next[dragging] = { ...holePos };
+        return next;
+      });
+      setLocked(prev => {
+        const next = [...prev];
+        next[dragging] = true;
+        return next;
+      });
+    }
+    setDragging(null);
+  }, [dragging, positions, holePositions, holeShapes, pieces]);
+
+  const onMouseMove = useCallback((e: React.MouseEvent) => moveDrag(e.clientX, e.clientY), [moveDrag]);
+  const onMouseUp = useCallback(() => endDrag(), [endDrag]);
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length > 0) moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+  }, [moveDrag]);
+  const onTouchEnd = useCallback(() => endDrag(), [endDrag]);
+
+  return (
+    <div className="mini-shell mini-shell-shapesorter">
+      <div className="mini-callout mini-callout-shapesorter">
+        Drag each shape into its matching hole
+      </div>
+      <div className="shapesorter-count">{locked.filter(Boolean).length}/{SHAPE_COUNT}</div>
+      <div
+        className="shapesorter-board"
+        ref={boardRef}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        {/* Holes — in holeShapes order */}
+        {holeShapes.map((shape, i) => {
+          const isFilled = pieces.some((p, pi) => p.id === shape.id && locked[pi]);
+          return (
+            <div
+              key={`hole-${shape.id}`}
+              className={`shapesorter-hole${isFilled ? ' shapesorter-hole-filled' : ''}`}
+              style={{
+                left: `${holePositions[i].x * 100}%`,
+                top: `${holePositions[i].y * 100}%`,
+              }}
+            >
+              <svg viewBox="0 0 48 48" className="shapesorter-hole-svg">
+                <path d={shape.path} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="2" strokeDasharray="4 3" />
+              </svg>
+            </div>
+          );
+        })}
+
+        {/* Draggable pieces — in separately shuffled order */}
+        {pieces.map((shape, i) => (
+          <div
+            key={`piece-${shape.id}`}
+            className={`shapesorter-piece${dragging === i ? ' shapesorter-dragging' : ''}${locked[i] ? ' shapesorter-locked' : ''}`}
+            style={{
+              left: `${positions[i].x * 100}%`,
+              top: `${positions[i].y * 100}%`,
+            }}
+            onMouseDown={e => { e.preventDefault(); startDrag(i, e.clientX, e.clientY); }}
+            onTouchStart={e => { if (e.touches.length > 0) startDrag(i, e.touches[0].clientX, e.touches[0].clientY); }}
+          >
+            <svg viewBox="0 0 48 48" className="shapesorter-piece-svg">
+              <path d={shape.path} fill={shape.color} />
+            </svg>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Currency Match — match a 3-letter currency code to its symbol
 // ---------------------------------------------------------------------------
 
@@ -2109,6 +2284,7 @@ const IMPLEMENTED_MINIGAMES = new Set<MiniGameId>([
   'bug-bash',
   'cache-knowledge',
   'currency-match',
+  'shape-sorter',
   'find-the-logs',
   'guess-the-country',
   'guess-the-hex',
@@ -2179,6 +2355,10 @@ export function MiniGamePanel({
 
   if (miniGameId === 'it-maze') {
     return <ItMazeGame onResolve={onResolve} />;
+  }
+
+  if (miniGameId === 'shape-sorter') {
+    return <ShapeSorterGame onResolve={onResolve} />;
   }
 
   if (miniGameId === 'currency-match') {

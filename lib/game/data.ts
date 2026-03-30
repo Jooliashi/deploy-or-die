@@ -172,14 +172,11 @@ export const roles: RoleDefinition[] = [
       },
       {
         label: 'Cosmos DB',
+        miniGameId: 'shape-sorter',
         subControls: {
-          scaleUp: [
+          default: [
             { label: 'Cosmos DB is throttling writes during a deploy spike', timerSeconds: 15 },
-          ],
-          addReplica: [
             { label: 'Cosmos DB failover coverage is missing a secondary replica', timerSeconds: 18 },
-          ],
-          failover: [
             { label: 'The primary Cosmos DB region is erroring on every write', timerSeconds: 14 },
           ],
         },
