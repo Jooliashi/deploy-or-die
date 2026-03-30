@@ -738,7 +738,10 @@ function buildDeploySequenceScenario(previousSentence?: string): DeploySequenceS
   const pool = previousSentence
     ? DEPLOY_SEQUENCE_SCENARIOS.filter(scenario => scenario.sentence !== previousSentence)
     : DEPLOY_SEQUENCE_SCENARIOS;
-  return pool[randomIndex(pool.length)];
+  const picked = pool[randomIndex(pool.length)];
+  // Shuffle options so the correct emojis aren't always first.
+  const shuffledOptions = [...picked.options].sort(() => Math.random() - 0.5);
+  return { ...picked, options: shuffledOptions };
 }
 
 function buildRegexScenario(previousPrompt?: string) {
