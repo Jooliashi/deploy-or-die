@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { promptPool } from '@/lib/game/data';
+import { roles } from '@/lib/game/data';
+import { hasMiniGame } from '@/components/minigames';
 import type { MultiplayerAdapter, SharedRoomState } from '@/lib/multiplayer/types';
 
 interface DebugMenuProps {
@@ -11,30 +12,23 @@ interface DebugMenuProps {
   onClose: () => void;
 }
 
-/** All unique prompt labels grouped by actionLabel (control name). */
-const promptsByControl = (() => {
-  const map = new Map<string, string[]>();
-  for (const t of promptPool) {
-    const existing = map.get(t.actionLabel) ?? [];
-    existing.push(t.label);
-    map.set(t.actionLabel, existing);
-  }
-  return map;
-})();
-
-const controlNames = [...promptsByControl.keys()].sort();
+function formatSubControlLabel(key: string): string {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, letter => letter.toUpperCase());
+}
 
 export function DebugMenu({ adapter, state, playerId, onClose }: DebugMenuProps) {
-  const [expandedControl, setExpandedControl] = useState<string | null>(null);
   const [lockedPrompt, setLockedPrompt] = useState<string | null>(null);
 
   const handlePromptClick = useCallback((label: string) => {
     if (lockedPrompt === label) {
-      // Unselect — unlock and resume normal spawning.
       setLockedPrompt(null);
       adapter.debugForcePrompt(null, playerId);
     } else {
-      // Select — lock to this prompt.
       setLockedPrompt(label);
       adapter.debugForcePrompt(label, playerId);
     }
@@ -43,6 +37,14 @@ export function DebugMenu({ adapter, state, playerId, onClose }: DebugMenuProps)
   const handleClose = useCallback(() => {
     onClose();
   }, [onClose]);
+
+  const totalPrompts = roles.reduce(
+    (sum, r) => sum + r.controls.reduce(
+      (cs, c) => cs + Object.values(c.subControls).reduce((ss, arr) => ss + arr.length, 0),
+      0,
+    ),
+    0,
+  );
 
   return (
     <div className="debug-overlay" onClick={e => { if (e.target === e.currentTarget) handleClose(); }}>
@@ -87,47 +89,73 @@ export function DebugMenu({ adapter, state, playerId, onClose }: DebugMenuProps)
           </div>
         </section>
 
-        {/* Spawn specific prompts */}
+        {/* Task tree */}
         <section className="debug-section">
           <h3 className="debug-section-title">
-            Spawn Task
-            {lockedPrompt && (
-              <span className="debug-locked-badge">Locked</span>
-            )}
+            Tasks
+            <span className="debug-count-badge">{totalPrompts} prompts</span>
+            {lockedPrompt && <span className="debug-locked-badge">Locked</span>}
           </h3>
-          <div className="debug-task-list">
-            {controlNames.map(control => {
-              const prompts = promptsByControl.get(control) ?? [];
-              const isExpanded = expandedControl === control;
-
-              return (
-                <div key={control} className="debug-task-group">
-                  <button
-                    className={`debug-task-control${isExpanded ? ' debug-task-expanded' : ''}`}
-                    onClick={() => setExpandedControl(isExpanded ? null : control)}
-                    type="button"
-                  >
-                    <span>{control}</span>
-                    <span className="debug-task-count">{prompts.length}</span>
-                  </button>
-                  {isExpanded && (
-                    <div className="debug-task-prompts">
-                      {prompts.map(label => (
-                        <button
-                          key={label}
-                          className={`debug-task-prompt${lockedPrompt === label ? ' debug-task-active' : ''}`}
-                          onClick={() => handlePromptClick(label)}
-                          type="button"
-                        >
-                          {lockedPrompt === label && <span className="debug-active-dot" />}
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+          <div className="debug-tree">
+            {roles.map(role => (
+              <div key={role.id} className="debug-tree-category">
+                <div className="debug-tree-category-head">
+                  <span className="debug-tree-icon">▸</span>
+                  <span className="debug-tree-category-name">{role.name}</span>
+                  <span className="debug-tree-meta">{role.controls.length} controls</span>
                 </div>
-              );
-            })}
+
+                {role.controls.map(control => {
+                  const subKeys = Object.keys(control.subControls);
+                  const promptCount = Object.values(control.subControls).reduce((s, arr) => s + arr.length, 0);
+                  const hasGame = hasMiniGame(control.miniGameId);
+
+                  return (
+                    <div key={control.label} className="debug-tree-control">
+                      <div className="debug-tree-control-head">
+                        <span className="debug-tree-icon debug-tree-icon-sm">▹</span>
+                        <span className="debug-tree-control-name">{control.label}</span>
+                        {control.miniGameId ? (
+                          <span className={`debug-tree-tag ${hasGame ? 'debug-tree-tag-game' : 'debug-tree-tag-none'}`}>
+                            {control.miniGameId}
+                          </span>
+                        ) : (
+                          <span className="debug-tree-tag debug-tree-tag-none">no game</span>
+                        )}
+                        <span className="debug-tree-meta">{promptCount}p</span>
+                      </div>
+
+                      {subKeys.map(subKey => {
+                        const prompts = control.subControls[subKey];
+                        const subLabel = subKey === 'default' ? null : formatSubControlLabel(subKey);
+
+                        return (
+                          <div key={subKey} className="debug-tree-sub">
+                            {subLabel && (
+                              <div className="debug-tree-sub-head">
+                                <span className="debug-tree-icon debug-tree-icon-xs">·</span>
+                                <span className="debug-tree-sub-name">{subLabel}</span>
+                              </div>
+                            )}
+                            {prompts.map(prompt => (
+                              <button
+                                key={prompt.label}
+                                className={`debug-tree-prompt${lockedPrompt === prompt.label ? ' debug-tree-prompt-active' : ''}`}
+                                onClick={() => handlePromptClick(prompt.label)}
+                                type="button"
+                              >
+                                <span className="debug-tree-prompt-text">{prompt.label}</span>
+                                <span className="debug-tree-prompt-timer">{prompt.timerSeconds}s</span>
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </section>
       </div>

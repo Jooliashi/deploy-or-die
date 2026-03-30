@@ -3770,96 +3770,11 @@ button {
   color: var(--text-muted);
 }
 
-.debug-task-list {
-  display: grid;
-  gap: 4px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.debug-task-group {
-  display: grid;
-}
-
-.debug-task-control {
-  appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--text);
-  padding: 8px 12px;
-  font-size: 13px;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: background 0.12s ease;
-}
-
-.debug-task-control:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.debug-task-expanded {
-  border-radius: 8px 8px 0 0;
-  border-color: rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.debug-task-count {
-  font-family: var(--mono);
-  font-size: 11px;
+.debug-count-badge {
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 400;
   color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.08);
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.debug-task-prompts {
-  display: grid;
-  gap: 2px;
-  padding: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-top: 0;
-  border-radius: 0 0 8px 8px;
-  background: rgba(0, 0, 0, 0.2);
-}
-
-.debug-task-prompt {
-  appearance: none;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-muted);
-  padding: 6px 10px;
-  font-size: 12px;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.1s ease, color 0.1s ease;
-}
-
-.debug-task-prompt:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text);
-}
-
-.debug-task-active {
-  background: rgba(79, 137, 255, 0.12);
-  color: var(--accent);
-}
-
-.debug-task-active:hover {
-  background: rgba(79, 137, 255, 0.18);
-}
-
-.debug-active-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--accent);
-  margin-right: 8px;
-  flex-shrink: 0;
 }
 
 .debug-locked-badge {
@@ -3873,6 +3788,164 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   vertical-align: middle;
+}
+
+/* Tree view */
+.debug-tree {
+  display: grid;
+  gap: 2px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.debug-tree-icon {
+  color: var(--text-muted);
+  font-size: 10px;
+  width: 12px;
+  flex-shrink: 0;
+}
+
+.debug-tree-icon-sm {
+  font-size: 9px;
+}
+
+.debug-tree-icon-xs {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.debug-tree-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Category (role) */
+.debug-tree-category {
+  display: grid;
+}
+
+.debug-tree-category-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.debug-tree-category-name {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Control */
+.debug-tree-control {
+  display: grid;
+  padding-left: 16px;
+}
+
+.debug-tree-control-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  color: var(--text);
+}
+
+.debug-tree-control-name {
+  font-weight: 600;
+}
+
+.debug-tree-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.debug-tree-tag-game {
+  background: rgba(76, 229, 159, 0.12);
+  color: #4ce59f;
+  border: 1px solid rgba(76, 229, 159, 0.2);
+}
+
+.debug-tree-tag-none {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Sub-control group */
+.debug-tree-sub {
+  padding-left: 18px;
+}
+
+.debug-tree-sub-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 11px;
+}
+
+.debug-tree-sub-name {
+  opacity: 0.7;
+}
+
+/* Prompt (clickable) */
+.debug-tree-prompt {
+  appearance: none;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 3px 8px;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.debug-tree-prompt:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+
+.debug-tree-prompt-active {
+  background: rgba(79, 137, 255, 0.12);
+  color: var(--accent);
+}
+
+.debug-tree-prompt-active:hover {
+  background: rgba(79, 137, 255, 0.18);
+}
+
+.debug-tree-prompt-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debug-tree-prompt-timer {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 /* ── Demo Control Picker ───────────────────────────────────── */
