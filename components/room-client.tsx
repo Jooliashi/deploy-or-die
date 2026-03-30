@@ -1211,11 +1211,18 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
           // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
           <div className="mini-backdrop" onClick={handleSubcontrolBackdropClick}>
             <section className="mini-stage subcontrol-stage" ref={subcontrolStageRef}>
-              <div>
-                <span className="eyebrow">Choose Action</span>
-                <h3 style={{ marginTop: 8 }}>{openSubControl}</h3>
+              <div className="window-titlebar">
+                <div className="window-dots">
+                  <button className="window-dot window-dot-red" type="button" onClick={() => setOpenSubControl(null)} aria-label="Close" />
+                  <span className="window-dot window-dot-yellow" />
+                  <span className="window-dot window-dot-green" />
+                </div>
+                <span className="window-title">Choose Action</span>
+                <div className="window-dots-spacer" />
               </div>
-              <div className="subcontrol-list modal-subcontrol-list">
+              <div className="window-body">
+                <h3 className="window-heading">{openSubControl}</h3>
+                <div className="subcontrol-list modal-subcontrol-list">
                 {Object.keys(openControlDefinition.subControls).map(subControlKey => {
                   const subLabel =
                     subControlKey === 'default' ? 'Confirm' : formatSubControlLabel(subControlKey);
@@ -1251,6 +1258,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
                     </button>
                   );
                 })}
+                </div>
               </div>
             </section>
           </div>
@@ -1264,28 +1272,30 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
               ref={minigameStageRef}
               role="dialog"
             >
-              <div className="mini-stage-head">
-                <div>
-                  <span className="eyebrow">Mini Game</span>
-                  <h3 className="mini-stage-title">{activeMiniGamePrompt.actionLabel}</h3>
+              <div className="window-titlebar">
+                <div className="window-dots">
+                  <button className="window-dot window-dot-red" type="button" onClick={closeMiniGame} aria-label="Close" />
+                  <span className="window-dot window-dot-yellow" />
+                  <span className="window-dot window-dot-green" />
                 </div>
-                <div className="mini-chip">
-                  {activeMiniGamePrompt.selectionLabel || activeMiniGamePrompt.miniGameId}
-                </div>
+                <span className="window-title">{activeMiniGamePrompt.actionLabel}</span>
+                <div className="window-dots-spacer" />
               </div>
 
-              <MiniGamePanel
-                miniGameId={activeMiniGamePrompt.miniGameId}
-                onResolve={() => {
-                  setMinigameSuccess(true);
-                }}
-              />
+              <div className="window-body">
+                <MiniGamePanel
+                  miniGameId={activeMiniGamePrompt.miniGameId}
+                  onResolve={() => {
+                    setMinigameSuccess(true);
+                  }}
+                />
 
-              {minigameSuccess ? (
-                <div className="minigame-success">
-                  <div className="minigame-success-badge">Success!</div>
-                </div>
-              ) : null}
+                {minigameSuccess ? (
+                  <div className="minigame-success">
+                    <div className="minigame-success-badge">Success!</div>
+                  </div>
+                ) : null}
+              </div>
             </section>
           </div>
         ) : null}
