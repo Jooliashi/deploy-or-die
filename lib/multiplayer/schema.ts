@@ -51,4 +51,10 @@ export const JazzRoom = co.map({
   deploy: JazzDeployState,
   players: JazzPlayerList,
   gameStarted: z.boolean(),
+  /** Timestamp when the room was created. Used for leaderboard validation. */
+  createdAt: z.number(),
+  /** Peak market cap achieved during the game. */
+  peakValuation: z.number(),
+  /** Whether the score was already reported to the leaderboard. */
+  scoreReported: z.boolean(),
 });

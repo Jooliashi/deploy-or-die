@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Leaderboard } from '@/components/leaderboard';
 import { createJazzRoom, DEMO_ROOM_CODE } from '@/lib/multiplayer/jazz-adapter';
 
 const DEFAULT_NAMES = [
@@ -225,6 +226,10 @@ export function Lobby() {
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="landing-bottom">
+        <Leaderboard />
       </div>
     </div>
   );

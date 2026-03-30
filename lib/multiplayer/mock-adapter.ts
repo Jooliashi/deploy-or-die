@@ -156,6 +156,7 @@ export class MockMultiplayerAdapter implements MultiplayerAdapter {
     this.#emit();
   }
 
+  async reportScore() { return false; }
   debugAdjustValuation(_delta: number) {}
   debugResetTimer() {}
   debugForcePrompt(_label: string | null, _playerId: string) {}

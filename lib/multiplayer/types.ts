@@ -25,6 +25,8 @@ export interface MultiplayerAdapter {
   failPrompt(promptId: string): void;
   misfireControl(playerId: string, controlLabel: string): void;
   subscribe(listener: (state: SharedRoomState) => void): () => void;
+  /** Report final score to the leaderboard. Returns true if reported. */
+  reportScore(): Promise<boolean>;
   // Debug methods (only used in demo/dev)
   debugAdjustValuation(delta: number): void;
   debugResetTimer(): void;

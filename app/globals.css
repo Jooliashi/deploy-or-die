@@ -3506,6 +3506,43 @@ button {
   padding: 16px 0;
 }
 
+.game-over-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.game-over-stat {
+  text-align: center;
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.game-over-stat strong {
+  font-size: 20px;
+}
+
+.game-over-actions {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+.game-over-status {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.game-over-status-ok {
+  color: var(--success);
+}
+
+.game-over-status-err {
+  color: var(--danger);
+}
+
 /* ── Animations ────────────────────────────────────────────── */
 
 /* Button hover lift */
@@ -4109,6 +4146,79 @@ button {
   font-size: 9px;
   color: var(--text-muted);
   opacity: 0.6;
+}
+
+/* ── Leaderboard ───────────────────────────────────────────── */
+
+.leaderboard {
+  display: grid;
+  gap: 12px;
+}
+
+.leaderboard-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.leaderboard-loading,
+.leaderboard-empty {
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
+  padding: 16px;
+}
+
+.leaderboard-list {
+  display: grid;
+  gap: 4px;
+}
+
+.leaderboard-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.leaderboard-rank {
+  font-size: 16px;
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.leaderboard-info {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.leaderboard-players {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.leaderboard-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+}
+
+.leaderboard-score {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--success);
+  flex-shrink: 0;
 }
 
 /* ── Demo Control Picker ───────────────────────────────────── */

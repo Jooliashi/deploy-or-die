@@ -280,6 +280,35 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     return () => { this.#listeners.delete(listener); };
   }
 
+  async reportScore(): Promise<boolean> {
+    if (this.#room.scoreReported) return false;
+    try {
+      const players = [];
+      for (let i = 0; i < this.#room.players.length; i++) {
+        players.push(this.#room.players[i].name);
+      }
+      const res = await fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomId: this.#room.$jazz.id,
+          players,
+          peakValuation: this.#room.peakValuation,
+          level: this.#room.deploy.currentLevel,
+          createdAt: this.#room.createdAt,
+          endedAt: Date.now(),
+        }),
+      });
+      if (res.ok) {
+        this.#room.$jazz.set('scoreReported', true);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
   // ── Debug methods ────────────────────────────────────────
 
   debugGetLockedControl(): string | null {
@@ -348,6 +377,10 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
     const newVal = Math.max(this.#room.deploy.valuation + delta, 0);
     this.#room.deploy.$jazz.set('valuation', newVal);
     this.#room.deploy.valuationHistory.$jazz.push(newVal);
+    // Track peak market cap.
+    if (newVal > this.#room.peakValuation) {
+      this.#room.$jazz.set('peakValuation', newVal);
+    }
     if (newVal <= 0 && !this.#room.deploy.bankrupt) {
       this.#room.deploy.$jazz.set('bankrupt', true);
     }
@@ -547,30 +580,49 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
 
   #resetReady(): void {
     for (let i = 0; i < this.#room.players.length; i++) {
-      this.#room.players[i].$jazz.set('ready', false);
+      try {
+        this.#room.players[i].$jazz.set('ready', false);
+      } catch {
+        // Player might not be fully loaded yet.
+      }
     }
   }
 
   #setLevelBriefing(level: number): void {
-    const config = getLevelConfig(level);
-    this.#distributeControls(config.buttonCount);
-    this.#clearPrompts();
-    this.#room.deploy.$jazz.set('currentLevel', config.level);
-    this.#room.deploy.$jazz.set('levelPhase', 'briefing');
-    this.#room.deploy.$jazz.set('timeRemainingSeconds', config.durationSeconds);
-    this.#room.deploy.$jazz.set('consecutiveFailures', 0);
-    this.#resetReady();
+    // Lock progression FIRST to prevent #checkProgressionReady from
+    // auto-starting the level while we're still resetting ready states.
+    this.#progressionInProgress = true;
+    try {
+      const config = getLevelConfig(level);
+      // Reset ready BEFORE changing the phase, so there's no window
+      // where levelPhase=briefing but players are still ready.
+      this.#resetReady();
+      this.#distributeControls(config.buttonCount);
+      this.#clearPrompts();
+      this.#room.deploy.$jazz.set('currentLevel', config.level);
+      this.#room.deploy.$jazz.set('levelPhase', 'briefing');
+      this.#room.deploy.$jazz.set('timeRemainingSeconds', config.durationSeconds);
+      this.#room.deploy.$jazz.set('consecutiveFailures', 0);
+    } finally {
+      this.#progressionInProgress = false;
+    }
   }
 
   #startLevel(level: number): void {
-    const config = getLevelConfig(level);
-    this.#clearPrompts();
-    this.#room.deploy.$jazz.set('currentLevel', config.level);
-    this.#room.deploy.$jazz.set('levelPhase', 'playing');
-    this.#room.deploy.$jazz.set('timeRemainingSeconds', config.durationSeconds);
-    this.#room.deploy.$jazz.set('consecutiveFailures', 0);
-    this.#spawnIfNeeded();
-    this.#activateNextPrompts();
+    this.#progressionInProgress = true;
+    try {
+      const config = getLevelConfig(level);
+      this.#clearPrompts();
+      this.#room.deploy.$jazz.set('currentLevel', config.level);
+      this.#room.deploy.$jazz.set('levelPhase', 'playing');
+      this.#room.deploy.$jazz.set('timeRemainingSeconds', config.durationSeconds);
+      this.#room.deploy.$jazz.set('consecutiveFailures', 0);
+      this.#resetReady();
+      this.#spawnIfNeeded();
+      this.#activateNextPrompts();
+    } finally {
+      this.#progressionInProgress = false;
+    }
   }
 
   #completeCurrentLevel(): void {
@@ -680,7 +732,7 @@ export function createJazzRoom(options: {
     valuationHistory,
     currentLevel: 1,
     levelPhase: isDemo ? 'playing' : 'briefing',
-    timeRemainingSeconds: isDemo ? DEMO_DURATION_SECONDS : LEVELS[0].durationSeconds,
+    timeRemainingSeconds: LEVELS[0].durationSeconds,
     prompts,
     consecutiveFailures: 0,
     failureThreshold: getFailureThreshold(isDemo ? 1 : 2),
@@ -693,7 +745,14 @@ export function createJazzRoom(options: {
   const players = JazzPlayerList.create([], ownerOpt);
 
   const room = JazzRoom.create(
-    { deploy, players, gameStarted: !!isDemo },
+    {
+      deploy,
+      players,
+      gameStarted: !!isDemo,
+      createdAt: Date.now(),
+      peakValuation: STARTING_VALUATION,
+      scoreReported: false,
+    },
     ownerOpt,
   ) as unknown as LoadedJazzRoom;
 

@@ -690,6 +690,15 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     oscillator.stop(currentTime + 0.15);
   }, [warningPrompt, warningRemaining]);
 
+  // Leaderboard submission — manual, triggered from the bankruptcy screen.
+  const [scoreStatus, setScoreStatus] = useState<'idle' | 'submitting' | 'submitted' | 'error'>('idle');
+  const submitScore = useCallback(async () => {
+    if (!adapter || scoreStatus !== 'idle') return;
+    setScoreStatus('submitting');
+    const ok = await adapter.reportScore();
+    setScoreStatus(ok ? 'submitted' : 'error');
+  }, [adapter, scoreStatus]);
+
   // ── Render gates (no hooks below this point) ──────────────
 
   // Loading / error state.
@@ -734,7 +743,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   const readyCount = state.players.filter(p => p.ready).length;
   const playerCount = state.players.length;
 
-  if (!isDemo && state.deploy.levelPhase === 'briefing') {
+  if (state.deploy.levelPhase === 'briefing') {
     return (
       <main className="panel room-shell waiting-shell">
         <div className="waiting-content level-briefing-content">
@@ -804,20 +813,54 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
 
   // Game over.
   if (bankrupt) {
+    const peakVal = Math.max(...valuationHistory);
+
     return (
       <main className="panel room-shell game-over-shell">
         <div className="game-over-content">
           <span className="eyebrow">Game Over</span>
           <h1 className="game-over-title">BANKRUPT</h1>
           <p className="game-over-sub">
-            The company valuation hit $0. The board has called an emergency meeting.
-            All engineers have been let go.
+            The company hit $0. The board has called an emergency meeting.
           </p>
+          <div className="game-over-stats">
+            <div className="panel-muted game-over-stat">
+              <span className="stat-label">Peak Market Cap</span>
+              <strong>{formatValuation(peakVal)}</strong>
+            </div>
+            <div className="panel-muted game-over-stat">
+              <span className="stat-label">Level Reached</span>
+              <strong>{state.deploy.currentLevel}</strong>
+            </div>
+            <div className="panel-muted game-over-stat">
+              <span className="stat-label">Players</span>
+              <strong>{state.players.length}</strong>
+            </div>
+          </div>
           <div className="game-over-chart">
             <Sparkline data={valuationHistory} height={80} />
           </div>
-          <div className="cta-row" style={{ justifyContent: 'center' }}>
-            <a className="button" href="/">Back to Lobby</a>
+          <div className="game-over-actions">
+            {isHost && scoreStatus === 'idle' && (
+              <button className="button" onClick={submitScore} type="button">
+                Submit to Leaderboard
+              </button>
+            )}
+            {scoreStatus === 'submitting' && (
+              <span className="game-over-status">Submitting...</span>
+            )}
+            {scoreStatus === 'submitted' && (
+              <span className="game-over-status game-over-status-ok">Score submitted!</span>
+            )}
+            {scoreStatus === 'error' && (
+              <span className="game-over-status game-over-status-err">Failed to submit. Try again?</span>
+            )}
+            {scoreStatus === 'error' && (
+              <button className="button secondary" onClick={() => { setScoreStatus('idle'); }} type="button">
+                Retry
+              </button>
+            )}
+            <a className="button secondary" href="/">Back to Lobby</a>
           </div>
         </div>
       </main>

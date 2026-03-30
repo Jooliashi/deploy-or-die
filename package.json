@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@upstash/redis": "^1.37.0",
     "@vercel/analytics": "^2.0.1",
     "jazz-tools": "^0.20.15",
     "next": "16.1.6",
