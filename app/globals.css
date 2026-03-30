@@ -2648,6 +2648,56 @@ button {
   background: rgba(168, 230, 207, 0.22);
 }
 
+/* ── Currency Match minigame ────────────────────────────── */
+
+.mini-shell-currency { gap: 20px; }
+.mini-callout-currency { color: #86efac; }
+
+.currency-code {
+  font-family: var(--mono);
+  font-size: 48px;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.12em;
+  color: var(--text);
+  transition: color 0.2s ease;
+}
+
+.currency-wrong {
+  color: #ff6b6b;
+  animation: logs-shake 0.4s ease;
+}
+
+.currency-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.currency-option {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 16px 8px;
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.currency-option:hover {
+  background: rgba(134, 239, 172, 0.1);
+  border-color: rgba(134, 239, 172, 0.3);
+  transform: scale(1.05);
+}
+
+.currency-option:active {
+  transform: scale(0.95);
+}
+
 /* ── Cache Knowledge minigame ───────────────────────────── */
 
 .mini-shell-cache { gap: 18px; }

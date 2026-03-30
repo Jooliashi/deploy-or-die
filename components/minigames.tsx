@@ -1663,6 +1663,82 @@ function shuffle<T>(arr: T[]): T[] {
 
 
 // ---------------------------------------------------------------------------
+// Currency Match — match a 3-letter currency code to its symbol
+// ---------------------------------------------------------------------------
+
+const CURRENCIES = [
+  { code: 'USD', symbol: '$' },
+  { code: 'EUR', symbol: '€' },
+  { code: 'GBP', symbol: '£' },
+  { code: 'JPY', symbol: '¥' },
+  { code: 'KRW', symbol: '₩' },
+  { code: 'INR', symbol: '₹' },
+  { code: 'BRL', symbol: 'R$' },
+  { code: 'THB', symbol: '฿' },
+  { code: 'PLN', symbol: 'zł' },
+  { code: 'TRY', symbol: '₺' },
+  { code: 'CHF', symbol: 'Fr' },
+  { code: 'SEK', symbol: 'kr' },
+  { code: 'RUB', symbol: '₽' },
+  { code: 'NGN', symbol: '₦' },
+  { code: 'ILS', symbol: '₪' },
+  { code: 'PHP', symbol: '₱' },
+  { code: 'UAH', symbol: '₴' },
+  { code: 'VND', symbol: '₫' },
+  { code: 'BTC', symbol: '₿' },
+  { code: 'ETH', symbol: 'Ξ' },
+];
+
+function buildCurrencyRound() {
+  const shuffled = [...CURRENCIES].sort(() => Math.random() - 0.5);
+  const answer = shuffled[0];
+  // Pick 3 distractors (different symbols).
+  const distractors = shuffled.slice(1, 4);
+  const options = [answer, ...distractors].sort(() => Math.random() - 0.5);
+  return { answer, options };
+}
+
+function CurrencyMatchGame({ onResolve }: { onResolve: () => void }) {
+  const [round, setRound] = useState(buildCurrencyRound);
+  const [wrongFlash, setWrongFlash] = useState(false);
+
+  const handlePick = useCallback((symbol: string) => {
+    if (symbol === round.answer.symbol) {
+      onResolve();
+    } else {
+      setWrongFlash(true);
+      setTimeout(() => {
+        setWrongFlash(false);
+        setRound(buildCurrencyRound());
+      }, 400);
+    }
+  }, [round.answer.symbol, onResolve]);
+
+  return (
+    <div className="mini-shell mini-shell-currency">
+      <div className="mini-callout mini-callout-currency">
+        Match the currency code to its symbol
+      </div>
+      <div className={`currency-code${wrongFlash ? ' currency-wrong' : ''}`}>
+        {round.answer.code}
+      </div>
+      <div className="currency-options">
+        {round.options.map(opt => (
+          <button
+            key={opt.code}
+            className="currency-option"
+            onClick={() => handlePick(opt.symbol)}
+            type="button"
+          >
+            {opt.symbol}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Traffic Filter — tap malicious requests, avoid good ones
 // ---------------------------------------------------------------------------
 
@@ -2032,6 +2108,7 @@ function LoadBalancerSplitGame({ onResolve }: { onResolve: () => void }) {
 const IMPLEMENTED_MINIGAMES = new Set<MiniGameId>([
   'bug-bash',
   'cache-knowledge',
+  'currency-match',
   'find-the-logs',
   'guess-the-country',
   'guess-the-hex',
@@ -2102,6 +2179,10 @@ export function MiniGamePanel({
 
   if (miniGameId === 'it-maze') {
     return <ItMazeGame onResolve={onResolve} />;
+  }
+
+  if (miniGameId === 'currency-match') {
+    return <CurrencyMatchGame onResolve={onResolve} />;
   }
 
   if (miniGameId === 'cache-knowledge') {

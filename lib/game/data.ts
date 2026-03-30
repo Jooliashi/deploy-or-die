@@ -305,20 +305,15 @@ export const roles: RoleDefinition[] = [
     controls: [
       {
         label: 'Billing',
+        miniGameId: 'currency-match',
         subControls: {
-          issueRefund: [
+          default: [
             { label: 'A bug accidentally charged every customer $1 million', timerSeconds: 14 },
             { label: 'Duplicate charges went out to all pro-tier subscribers', timerSeconds: 16 },
-          ],
-          fixSubscription: [
             { label: 'Hundreds of customers are being downgraded to the free tier', timerSeconds: 17 },
             { label: 'The trial expiration job ran twice and locked out paying customers', timerSeconds: 15 },
-          ],
-          regenerateInvoice: [
             { label: 'Last month\'s invoices all show the wrong tax amount', timerSeconds: 18 },
             { label: 'A batch of enterprise invoices never got delivered', timerSeconds: 16 },
-          ],
-          handleChargeback: [
             { label: 'A wave of credit card chargebacks just came in from the payment processor', timerSeconds: 15 },
             { label: 'The chargeback rate spiked above 1% and the processor is threatening to cut us off', timerSeconds: 18 },
           ],
