@@ -1,7 +1,7 @@
 export type RoleId = 'frontend' | 'backend' | 'database' | 'success' | 'infra' | 'billing' | 'security';
 
 export type MiniGameId = string;
-export type LevelPhase = 'briefing' | 'playing' | 'complete';
+export type LevelPhase = 'briefing' | 'playing';
 
 export type PromptStatus = 'queued' | 'active' | 'resolved' | 'failed' | 'expired';
 

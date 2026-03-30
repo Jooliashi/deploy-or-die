@@ -574,10 +574,6 @@ export class JazzMultiplayerAdapter implements MultiplayerAdapter {
   }
 
   #completeCurrentLevel(): void {
-    if (this.#playerControls) {
-      this.#room.deploy.$jazz.set('levelPhase', 'complete');
-      return;
-    }
     const currentLevel = this.#room.deploy.currentLevel;
     // Always advance to the next level — levels are infinite.
     this.#setLevelBriefing(currentLevel + 1);

@@ -1056,24 +1056,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     );
   }
 
-  if (state.deploy.levelPhase === 'complete') {
-    return (
-      <main className="panel room-shell game-over-shell">
-        <div className="game-over-content">
-          <span className="eyebrow">Victory</span>
-          <h1 className="game-over-title">DEPLOYED</h1>
-          <p className="game-over-sub">
-            {isDemo
-              ? 'You kept the stack alive through the full solo run and got the app into production.'
-              : `The team survived ${state.deploy.currentLevel} levels and got the app into production.`}
-          </p>
-          <div className="cta-row" style={{ justifyContent: 'center' }}>
-            <a className="button" href="/">Back to Lobby</a>
-          </div>
-        </div>
-      </main>
-    );
-  }
+
 
   const displayCode = roomCode.length > 12
     ? `${roomCode.slice(0, 6)}...${roomCode.slice(-4)}`
