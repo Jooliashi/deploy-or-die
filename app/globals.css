@@ -726,9 +726,23 @@ button {
   height: 100%;
   display: grid;
   grid-template-rows: 1fr auto auto;
-  gap: 12px;
+  gap: 8px;
   justify-items: center;
   align-items: center;
+}
+
+/* Fixed icon box — all icons are SVGs with the same viewBox. */
+.icon-svg {
+  width: 64px;
+  height: 64px;
+  color: var(--role-accent);
+  opacity: 0.7;
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.icon-svg.icon-active {
+  opacity: 1;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.15));
 }
 
 .face-label {
@@ -973,11 +987,11 @@ button {
 }
 
 .dial-ring {
-  width: 108px;
-  height: 108px;
+  width: 56px;
+  height: 56px;
   align-self: center;
   border-radius: 999px;
-  border: 6px solid var(--role-accent);
+  border: 4px solid var(--role-accent);
   display: grid;
   place-items: center;
 }
@@ -989,24 +1003,7 @@ button {
   background: var(--role-accent);
 }
 
-.brand-mark {
-  width: 112px;
-  height: 92px;
-  overflow: visible;
-  color: var(--role-accent);
-}
 
-.brand-mark.active {
-  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.18));
-}
-
-.clickhouse-mark {
-  display: grid;
-  grid-template-columns: repeat(4, 16px);
-  align-items: end;
-  gap: 8px;
-  min-height: 92px;
-}
 
 .ch-block {
   display: block;
@@ -1015,11 +1012,11 @@ button {
 }
 
 .ch-block.tall {
-  height: 68px;
+  height: 52px;
 }
 
 .ch-block.short {
-  height: 42px;
+  height: 32px;
 }
 
 .ch-yellow {
@@ -3948,6 +3945,43 @@ button {
   flex-shrink: 0;
 }
 
+/* Button gallery */
+.debug-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.debug-gallery-item {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.debug-gallery-item .icon-svg {
+  width: 36px;
+  height: 36px;
+  opacity: 1;
+}
+
+.debug-gallery-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text);
+}
+
+.debug-gallery-skin {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
 /* ── Demo Control Picker ───────────────────────────────────── */
 
 .picker-content {
@@ -4281,6 +4315,11 @@ button {
 
   .control-button .control-face {
     gap: 4px;
+  }
+
+  .icon-svg {
+    width: 40px;
+    height: 40px;
   }
 
   .control-button .control-face-label {

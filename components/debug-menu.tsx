@@ -3,7 +3,11 @@
 import { useCallback, useState } from 'react';
 import { roles } from '@/lib/game/data';
 import { hasMiniGame } from '@/components/minigames';
+import { ControlIcon, getControlSkin } from '@/components/room-client';
 import type { MultiplayerAdapter, SharedRoomState } from '@/lib/multiplayer/types';
+
+/** All unique control labels for the gallery. */
+const allControls = roles.flatMap(r => r.controls.map(c => c.label));
 
 interface DebugMenuProps {
   adapter: MultiplayerAdapter;
@@ -156,6 +160,26 @@ export function DebugMenu({ adapter, state, playerId, onClose }: DebugMenuProps)
                 })}
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Button gallery */}
+        <section className="debug-section">
+          <h3 className="debug-section-title">
+            Button Gallery
+            <span className="debug-count-badge">{allControls.length} buttons</span>
+          </h3>
+          <div className="debug-gallery">
+            {allControls.map(label => {
+              const skin = getControlSkin(label);
+              return (
+                <div key={label} className="debug-gallery-item">
+                  <ControlIcon skin={skin} hasPrompt={false} />
+                  <span className="debug-gallery-label">{label}</span>
+                  <span className="debug-gallery-skin">{skin}</span>
+                </div>
+              );
+            })}
           </div>
         </section>
       </div>

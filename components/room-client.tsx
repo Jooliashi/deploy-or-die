@@ -73,7 +73,7 @@ function formatSubControlLabel(key: string) {
     .replace(/\b\w/g, letter => letter.toUpperCase());
 }
 
-function getControlSkin(control: string): ControlSkin {
+export function getControlSkin(control: string): ControlSkin {
   switch (control) {
     case 'Instant Rollback':
       return 'browser';
@@ -84,9 +84,9 @@ function getControlSkin(control: string): ControlSkin {
     case 'Configs':
       return 'configs';
     case 'Edge Config':
-      return 'terminal';
-    case 'Workflow':
       return 'switch';
+    case 'Workflow':
+      return 'terminal';
     case 'Vercel Function':
       return 'function';
     case 'Cache':
@@ -171,324 +171,92 @@ function getControlCodes(skin: ControlSkin): [string, string] {
   }
 }
 
+/** All icons use SVG with the same viewBox for consistent scaling. */
+export function ControlIcon({ skin, hasPrompt }: { skin: ControlSkin; hasPrompt: boolean }) {
+  const cls = `icon-svg${hasPrompt ? ' icon-active' : ''}`;
+  switch (skin) {
+    // Instant Rollback — circular arrow
+    case 'browser':
+      return (<svg className={cls} viewBox="0 0 48 48"><path d="M24 8a16 16 0 1 1-14 8" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/><path d="M10 6v10h10" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+    // UI — macOS window
+    case 'toggle':
+      return (<svg className={cls} viewBox="0 0 48 48"><rect x="4" y="8" width="40" height="32" rx="4" fill="none" stroke="currentColor" strokeWidth="3"/><line x1="4" y1="16" x2="44" y2="16" stroke="currentColor" strokeWidth="3"/><circle cx="10" cy="12" r="1.5" fill="#ff5f57"/><circle cx="15" cy="12" r="1.5" fill="#febc2e"/><circle cx="20" cy="12" r="1.5" fill="#28c840"/></svg>);
+    // Flags — flag on pole
+    case 'flag':
+      return (<svg className={cls} viewBox="0 0 48 48"><line x1="12" y1="8" x2="12" y2="40" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/><path d="M12 8h22l-6 8 6 8H12z" fill="currentColor" opacity="0.3" stroke="currentColor" strokeWidth="3" strokeLinejoin="round"/></svg>);
+    // Configs — sliders
+    case 'configs':
+      return (<svg className={cls} viewBox="0 0 48 48"><line x1="8" y1="14" x2="40" y2="14" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/><circle cx="20" cy="14" r="3" fill="currentColor"/><line x1="8" y1="24" x2="40" y2="24" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/><circle cx="32" cy="24" r="3" fill="currentColor"/><line x1="8" y1="34" x2="40" y2="34" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/><circle cx="16" cy="34" r="3" fill="currentColor"/></svg>);
+    // Status Page — heartbeat line
+    case 'statuspage':
+      return (<svg className={cls} viewBox="0 0 48 48"><path d="M4 26h8l4-10 6 20 5-14 4 4h13" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+    // Workflow/Terminal — terminal prompt
+    case 'terminal':
+      return (<svg className={cls} viewBox="0 0 48 48"><rect x="4" y="8" width="40" height="32" rx="4" fill="none" stroke="currentColor" strokeWidth="3"/><path d="M12 20l6 4-6 4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/><line x1="22" y1="28" x2="32" y2="28" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/></svg>);
+    // Edge Config — {;}
+    case 'switch':
+      return (<svg className={cls} viewBox="0 0 48 48"><text x="24" y="32" textAnchor="middle" fontSize="22" fontFamily="monospace" fontWeight="700" fill="currentColor">{'{;}'}</text></svg>);
+    // Vercel Function — ƒ
+    case 'function':
+      return (<svg className={cls} viewBox="0 0 48 48"><text x="24" y="34" textAnchor="middle" fontSize="32" fontFamily="Georgia, serif" fontStyle="italic" fontWeight="400" fill="currentColor">ƒ</text></svg>);
+    // Cache — circular arrows
+    case 'cache':
+      return (<svg className={cls} viewBox="0 0 48 48"><path d="M32 12a14 14 0 0 1 0 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/><path d="M16 36a14 14 0 0 1 0-24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/><path d="M30 8l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/><path d="M18 40l-4-4 4-4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+    // ClickHouse — bar chart
+    case 'clickhouse':
+      return (<svg className={cls} viewBox="0 0 48 48"><rect x="8" y="10" width="6" height="28" rx="2" fill="#F6C549"/><rect x="18" y="20" width="6" height="18" rx="2" fill="#FF5E57"/><rect x="28" y="16" width="6" height="22" rx="2" fill="#F6C549"/><rect x="38" y="24" width="6" height="14" rx="2" fill="#FF5E57"/></svg>);
+    // DynamoDB — stacked disks
+    case 'dynamodb':
+      return (<svg className={cls} viewBox="0 0 48 48"><ellipse cx="24" cy="14" rx="14" ry="5" fill="none" stroke="#8FD3FF" strokeWidth="3"/><path d="M10 14v10c0 3 6 6 14 6s14-3 14-6V14" fill="none" stroke="#8FD3FF" strokeWidth="3"/><ellipse cx="24" cy="24" rx="14" ry="5" fill="none" stroke="#8FD3FF" strokeWidth="3"/><path d="M10 24v10c0 3 6 6 14 6s14-3 14-6V24" fill="none" stroke="#8FD3FF" strokeWidth="3"/></svg>);
+    // Cosmos DB — planet with ring
+    case 'cosmosdb':
+      return (<svg className={cls} viewBox="0 0 48 48"><circle cx="24" cy="24" r="8" fill="#3EA8FF"/><ellipse cx="24" cy="24" rx="18" ry="7" fill="none" stroke="#9DD8FF" strokeWidth="2.5" transform="rotate(-20 24 24)"/><circle cx="38" cy="14" r="2" fill="#E6F7FF"/></svg>);
+    // Tinybird — golden bird (tight crop for ~15% larger appearance)
+    case 'tinybird':
+      return (<svg className={cls} viewBox="70 60 270 200">
+        <ellipse cx="180" cy="180" rx="80" ry="60" fill="#ffcc33"/>
+        <ellipse cx="230" cy="140" rx="60" ry="65" fill="#ffd966"/>
+        <circle cx="230" cy="145" r="10" fill="#261a0d"/>
+        <polygon points="260,140 310,180 260,200" fill="#f68121"/>
+      </svg>);
+    // Social Media — @
+    case 'social':
+      return (<svg className={cls} viewBox="0 0 48 48"><text x="24" y="34" textAnchor="middle" fontSize="30" fontFamily="monospace" fontWeight="700" fill="currentColor">@</text></svg>);
+    // Customer Ticket — speech bubble
+    case 'reply':
+      return (<svg className={cls} viewBox="0 0 48 48"><path d="M8 10h32a2 2 0 0 1 2 2v18a2 2 0 0 1-2 2H16l-8 6V12a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" strokeWidth="3" strokeLinejoin="round"/><line x1="16" y1="18" x2="32" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="16" y1="24" x2="28" y2="24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>);
+    // Vendor — handshake / link
+    case 'vendor':
+      return (<svg className={cls} viewBox="0 0 48 48"><path d="M8 24h8l4-4h8l4 4h8" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="24" r="4" fill="none" stroke="currentColor" strokeWidth="3"/><circle cx="36" cy="24" r="4" fill="none" stroke="currentColor" strokeWidth="3"/></svg>);
+    // IT — monitor with wrench
+    case 'it':
+      return (<svg className={cls} viewBox="0 0 48 48"><rect x="6" y="8" width="36" height="24" rx="3" fill="none" stroke="currentColor" strokeWidth="3"/><line x1="18" y1="36" x2="30" y2="36" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/><line x1="24" y1="32" x2="24" y2="36" stroke="currentColor" strokeWidth="3"/><path d="M20 16l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+    // Kubernetes — helm wheel
+    case 'kubernetes':
+      return (<svg className={cls} viewBox="0 0 48 48"><circle cx="24" cy="24" r="6" fill="none" stroke="currentColor" strokeWidth="3"/><circle cx="24" cy="8" r="3.5" fill="currentColor"/><circle cx="38" cy="16" r="3.5" fill="currentColor"/><circle cx="38" cy="32" r="3.5" fill="currentColor"/><circle cx="24" cy="40" r="3.5" fill="currentColor"/><circle cx="10" cy="32" r="3.5" fill="currentColor"/><circle cx="10" cy="16" r="3.5" fill="currentColor"/><path d="M24 18v-6.5M30 21l5-3M30 27l5 3M24 30v6.5M18 27l-5 3M18 21l-5-3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>);
+    // Networking — connected nodes
+    case 'networking':
+      return (<svg className={cls} viewBox="0 0 48 48"><circle cx="12" cy="24" r="4" fill="currentColor"/><circle cx="24" cy="12" r="4" fill="currentColor"/><circle cx="24" cy="36" r="4" fill="currentColor"/><circle cx="36" cy="24" r="4" fill="currentColor"/><line x1="16" y1="24" x2="32" y2="24" stroke="currentColor" strokeWidth="2.5"/><line x1="24" y1="16" x2="24" y2="32" stroke="currentColor" strokeWidth="2.5"/><line x1="15" y1="21" x2="21" y2="15" stroke="currentColor" strokeWidth="2.5"/><line x1="27" y1="15" x2="33" y2="21" stroke="currentColor" strokeWidth="2.5"/><line x1="15" y1="27" x2="21" y2="33" stroke="currentColor" strokeWidth="2.5"/><line x1="27" y1="33" x2="33" y2="27" stroke="currentColor" strokeWidth="2.5"/></svg>);
+    // Billing — credit card
+    case 'billing':
+      return (<svg className={cls} viewBox="0 0 48 48"><rect x="4" y="12" width="40" height="24" rx="4" fill="none" stroke="currentColor" strokeWidth="3"/><line x1="4" y1="20" x2="44" y2="20" stroke="currentColor" strokeWidth="3"/><line x1="10" y1="28" x2="20" y2="28" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="26" y1="28" x2="32" y2="28" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>);
+    // Security — shield with lock
+    case 'security':
+      return (<svg className={cls} viewBox="0 0 48 48"><path d="M24 6l16 6v12c0 10-7 16-16 18C15 40 8 34 8 24V12l16-6z" fill="none" stroke="currentColor" strokeWidth="3" strokeLinejoin="round"/><rect x="18" y="24" width="12" height="10" rx="2" fill="none" stroke="currentColor" strokeWidth="2.5"/><path d="M20 24v-3a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>);
+    default:
+      return (<svg className={cls} viewBox="0 0 48 48"><circle cx="24" cy="24" r="14" fill="none" stroke="currentColor" strokeWidth="3"/><circle cx="24" cy="24" r="4" fill="currentColor"/></svg>);
+  }
+}
+
 function ControlFace({ skin, label, hasPrompt }: { skin: ControlSkin; label: string; hasPrompt: boolean }) {
   const [codeA, codeB] = getControlCodes(skin);
-
-  switch (skin) {
-    case 'browser':
-      return (
-        <div className="control-face control-face-browser">
-          <div className="browser-top">
-            <span />
-            <span />
-            <span />
-          </div>
-          <div className="browser-window" />
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'toggle':
-      return (
-        <div className="control-face control-face-toggle">
-          <div className={`toggle-pill${hasPrompt ? ' on' : ''}`}>
-            <span />
-          </div>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'flag':
-      return (
-        <div className="control-face control-face-flag">
-          <div className="flag-columns">
-            <span />
-            <span className={hasPrompt ? 'active' : ''} />
-            <span />
-          </div>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'configs':
-      return (
-        <div className="control-face control-face-configs">
-          <svg
-            aria-hidden="true"
-            className={`brand-mark${hasPrompt ? ' active' : ''}`}
-            viewBox="0 0 120 96"
-          >
-            <rect x="18" y="20" width="84" height="12" rx="6" fill="none" stroke="currentColor" strokeWidth="6" />
-            <circle cx="42" cy="26" r="8" fill="currentColor" />
-            <rect x="18" y="44" width="84" height="12" rx="6" fill="none" stroke="currentColor" strokeWidth="6" />
-            <circle cx="78" cy="50" r="8" fill="currentColor" />
-            <rect x="18" y="68" width="84" height="12" rx="6" fill="none" stroke="currentColor" strokeWidth="6" />
-            <circle cx="58" cy="74" r="8" fill="currentColor" />
-          </svg>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'statuspage':
-      return (
-        <div className="control-face control-face-statuspage">
-          <svg
-            aria-hidden="true"
-            className={`brand-mark${hasPrompt ? ' active' : ''}`}
-            viewBox="0 0 120 96"
-          >
-            <path
-              d="M12 56h18l10-22 16 40 14-28 10 10h18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <circle cx="20" cy="56" r="5" fill="currentColor" />
-            <circle cx="98" cy="56" r="5" fill="currentColor" />
-          </svg>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'terminal':
-      return (
-        <div className="control-face control-face-terminal">
-          <div className="terminal-screen">&gt; sync env</div>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'switch':
-      return (
-        <div className="control-face control-face-switch">
-          <div className={`rocker${hasPrompt ? ' active' : ''}`} />
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'function':
-      return (
-        <div className="control-face control-face-function">
-          <svg
-            aria-hidden="true"
-            className={`brand-mark${hasPrompt ? ' active' : ''}`}
-            viewBox="0 0 120 96"
-          >
-            <path d="M22 28h52" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
-            <path d="M54 28c-10 0-18 8-18 18s8 18 18 18h44" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
-            <path d="M76 58l20 0" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
-            <path d="M84 18l18 10-18 10" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'cache':
-      return (
-        <div className="control-face control-face-cache">
-          <div className="dial-ring">
-            <div className="dial-core" />
-          </div>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'clickhouse':
-      return (
-        <div className="control-face control-face-clickhouse">
-          <svg
-            aria-hidden="true"
-            className={`brand-mark${hasPrompt ? ' active' : ''}`}
-            viewBox="0 0 120 96"
-          >
-            <rect x="18" y="16" width="16" height="60" rx="4" fill="#F6C549" />
-            <rect x="42" y="34" width="16" height="42" rx="4" fill="#FF5E57" />
-            <rect x="66" y="34" width="16" height="42" rx="4" fill="#F6C549" />
-            <rect x="90" y="16" width="16" height="60" rx="4" fill="#FF5E57" />
-          </svg>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'dynamodb':
-      return (
-        <div className="control-face control-face-dynamodb">
-          <svg
-            aria-hidden="true"
-            className={`brand-mark${hasPrompt ? ' active' : ''}`}
-            viewBox="0 0 120 96"
-          >
-            <ellipse cx="60" cy="22" rx="28" ry="10" fill="#8FD3FF" opacity="0.25" stroke="#8FD3FF" strokeWidth="4" />
-            <path d="M32 22v38c0 6 12 12 28 12s28-6 28-12V22" fill="rgba(143,211,255,0.12)" stroke="#8FD3FF" strokeWidth="4" />
-            <ellipse cx="60" cy="41" rx="28" ry="10" fill="none" stroke="#8FD3FF" strokeWidth="4" />
-            <ellipse cx="60" cy="60" rx="28" ry="10" fill="none" stroke="#8FD3FF" strokeWidth="4" />
-          </svg>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'cosmosdb':
-      return (
-        <div className="control-face control-face-cosmosdb">
-          <svg
-            aria-hidden="true"
-            className={`brand-mark${hasPrompt ? ' active' : ''}`}
-            viewBox="0 0 120 96"
-          >
-            <circle cx="58" cy="48" r="18" fill="#3EA8FF" />
-            <ellipse
-              cx="58"
-              cy="48"
-              rx="34"
-              ry="12"
-              fill="none"
-              stroke="#9DD8FF"
-              strokeWidth="4"
-              transform="rotate(-20 58 48)"
-            />
-            <circle cx="88" cy="22" r="4" fill="#E6F7FF" />
-            <circle cx="28" cy="70" r="3" fill="#E6F7FF" />
-          </svg>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'tinybird':
-      return (
-        <div className="control-face control-face-tinybird">
-          <div className={`tinybird-mark${hasPrompt ? ' active' : ''}`}>
-            <span className="tb-body" />
-            <span className="tb-wing" />
-            <span className="tb-beak" />
-            <span className="tb-eye" />
-          </div>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'social':
-      return (
-        <div className="control-face control-face-social">
-          <div className="social-burst">@</div>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'reply':
-      return (
-        <div className="control-face control-face-reply">
-          <div className="reply-bubble" />
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'vendor':
-      return (
-        <div className="control-face control-face-vendor">
-          <div className="vendor-nodes">
-            <span />
-            <span className={hasPrompt ? 'active' : ''} />
-            <span />
-          </div>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'it':
-      return (
-        <div className="control-face control-face-it">
-          <div className={`it-console${hasPrompt ? ' active' : ''}`}>
-            <span className="it-screen" />
-            <span className="it-base" />
-            <span className="it-badge" />
-          </div>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'kubernetes':
-      return (
-        <div className="control-face control-face-kubernetes">
-          <svg
-            aria-hidden="true"
-            className={`brand-mark${hasPrompt ? ' active' : ''}`}
-            viewBox="0 0 120 96"
-          >
-            <circle cx="60" cy="48" r="12" fill="none" stroke="currentColor" strokeWidth="6" />
-            <circle cx="60" cy="16" r="7" fill="currentColor" />
-            <circle cx="88" cy="32" r="7" fill="currentColor" />
-            <circle cx="88" cy="64" r="7" fill="currentColor" />
-            <circle cx="60" cy="80" r="7" fill="currentColor" />
-            <circle cx="32" cy="64" r="7" fill="currentColor" />
-            <circle cx="32" cy="32" r="7" fill="currentColor" />
-            <path d="M60 28V22M72 36l10-6M72 60l10 6M60 68v6M48 60l-10 6M48 36l-10-6" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
-          </svg>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'networking':
-      return (
-        <div className="control-face control-face-networking">
-          <svg
-            aria-hidden="true"
-            className={`brand-mark${hasPrompt ? ' active' : ''}`}
-            viewBox="0 0 120 96"
-          >
-            <circle cx="24" cy="48" r="8" fill="currentColor" />
-            <circle cx="60" cy="24" r="8" fill="currentColor" />
-            <circle cx="60" cy="72" r="8" fill="currentColor" />
-            <circle cx="96" cy="48" r="8" fill="currentColor" />
-            <path d="M32 48h56M60 32v32M30 44l24-16M30 52l24 16M66 32l24 16M66 64l24-16" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          </svg>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'billing':
-      return (
-        <div className="control-face control-face-billing">
-          <svg
-            aria-hidden="true"
-            className={`brand-mark${hasPrompt ? ' active' : ''}`}
-            viewBox="0 0 120 96"
-          >
-            <rect x="16" y="22" width="88" height="52" rx="10" fill="none" stroke="currentColor" strokeWidth="6" />
-            <rect x="16" y="34" width="88" height="10" fill="currentColor" opacity="0.9" />
-            <rect x="28" y="56" width="24" height="8" rx="4" fill="currentColor" opacity="0.7" />
-            <rect x="62" y="56" width="26" height="8" rx="4" fill="currentColor" />
-          </svg>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    case 'security':
-      return (
-        <div className="control-face control-face-security">
-          <svg
-            aria-hidden="true"
-            className={`brand-mark${hasPrompt ? ' active' : ''}`}
-            viewBox="0 0 120 96"
-          >
-            <path d="M60 16l28 10v22c0 18-11 29-28 34-17-5-28-16-28-34V26l28-10z" fill="none" stroke="currentColor" strokeWidth="6" strokeLinejoin="round" />
-            <path d="M48 48a12 12 0 1 1 24 0v10H48V48z" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
-            <rect x="44" y="56" width="32" height="18" rx="6" fill="none" stroke="currentColor" strokeWidth="6" />
-          </svg>
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-    default:
-      return (
-        <div className="control-face control-face-broadcast">
-          <div className="broadcast-cone" />
-          <div className="face-label">{label}</div>
-          <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
-        </div>
-      );
-  }
+  return (
+    <div className="control-face">
+      <ControlIcon skin={skin} hasPrompt={hasPrompt} />
+      <div className="face-label">{label}</div>
+      <div className="face-codes"><span>{codeA}</span><span>{codeB}</span></div>
+    </div>
+  );
 }
 
 function formatValuation(v: number): string {
