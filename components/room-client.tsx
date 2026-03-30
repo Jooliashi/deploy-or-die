@@ -752,6 +752,40 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
     }
   }, [closeMiniGame]);
 
+  const playSuccessSound = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const AudioContextClass = window.AudioContext || (window as typeof window & {
+      webkitAudioContext?: typeof AudioContext;
+    }).webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    const ctx = successAudioRef.current ?? new AudioContextClass();
+    successAudioRef.current = ctx;
+    if (ctx.state === 'suspended') void ctx.resume();
+
+    const t = ctx.currentTime;
+    const gain = ctx.createGain();
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+
+    // Quick two-note chime — bright and short.
+    const osc1 = ctx.createOscillator();
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(659.25, t);
+    osc1.connect(gain);
+    osc1.start(t);
+    osc1.stop(t + 0.1);
+
+    const osc2 = ctx.createOscillator();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(880, t + 0.08);
+    osc2.connect(gain);
+    osc2.start(t + 0.08);
+    osc2.stop(t + 0.2);
+  }, []);
+
   const launchMiniGame = useCallback((prompt: PromptDefinition) => {
     if (!adapter) {
       return;
@@ -759,6 +793,7 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
 
     if (!hasMiniGame(prompt.miniGameId)) {
       adapter.resolvePrompt(prompt.id);
+      playSuccessSound();
       setOpenSubControl(null);
       return;
     }
@@ -769,47 +804,9 @@ export function RoomClient({ roomCode, playerName, isHost }: RoomClientProps) {
   }, [adapter]);
 
   useEffect(() => {
-    if (!minigameSuccess || typeof window === 'undefined') {
-      return;
-    }
-
-    const AudioContextClass = window.AudioContext || (window as typeof window & {
-      webkitAudioContext?: typeof AudioContext;
-    }).webkitAudioContext;
-
-    if (!AudioContextClass) {
-      return;
-    }
-
-    const ctx = successAudioRef.current ?? new AudioContextClass();
-    successAudioRef.current = ctx;
-
-    if (ctx.state === 'suspended') {
-      void ctx.resume();
-    }
-
-    const now = ctx.currentTime;
-    const gain = ctx.createGain();
-    gain.connect(ctx.destination);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
-
-    const notes = [
-      { frequency: 523.25, start: 0 },
-      { frequency: 659.25, start: 0.08 },
-      { frequency: 783.99, start: 0.16 },
-    ];
-
-    notes.forEach(note => {
-      const oscillator = ctx.createOscillator();
-      oscillator.type = 'triangle';
-      oscillator.frequency.setValueAtTime(note.frequency, now + note.start);
-      oscillator.connect(gain);
-      oscillator.start(now + note.start);
-      oscillator.stop(now + note.start + 0.16);
-    });
-  }, [minigameSuccess]);
+    if (!minigameSuccess) return;
+    playSuccessSound();
+  }, [minigameSuccess, playSuccessSound]);
 
   useEffect(() => {
     if (!activeMiniGamePrompt || !minigameSuccess || !adapter) {
